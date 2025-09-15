@@ -9,4 +9,485 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image: url('/forest.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Основные стили */
+.plant-generator {
+  min-height: 100vh;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* Заголовок - адаптивный */
+.main-title {
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-weight: bold;
+  color: #F8F8F8;
+  -webkit-text-stroke: clamp(1px, 0.3vw, 2px) #27550B;
+  text-stroke: clamp(1px, 0.3vw, 2px) #27550B;
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+  text-align: center;
+  font-size: clamp(1.5rem, 6vw, 4rem);
+  margin-top: clamp(1rem, 3vw, 2rem);
+  line-height: 1.1;
+}
+
+/* Основная раскладка - адаптивная */
+.content-layout {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  align-items: stretch;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+/* Панель параметров */
+.parameters-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: clamp(8px, 1.5vw, 12px);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  /* border: 2px solid #27550B; */
+  width: 100%;
+  order: 2;
+}
+
+/* Панель с растением */
+.plant-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: clamp(8px, 1.5vw, 12px);
+  padding: clamp(0.75rem, 2vw, 1rem);
+  width: 100%;
+  order: 1;
+}
+
+.panel-title {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: clamp(0.75rem, 2vw, 1rem);
+  text-align: center;
+}
+
+/* Canvas контейнер */
+.canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f8f9fa;
+  min-height: 250px;
+}
+
+.canvas-display {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Элементы управления */
+.select-group {
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.select-label {
+  display: block;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.select-input {
+  width: 100%;
+  padding: clamp(0.4rem, 1.5vw, 0.5rem);
+  border: 1px solid #D1D5DB;
+  border-radius: 0.375rem;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  background: white;
+}
+
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2vw, 1rem);
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.slider-label {
+  font-size: clamp(0.75rem, 1.8vw, 0.875rem);
+  font-weight: 500;
+  color: #374151;
+}
+
+.slider {
+  width: 100%;
+  height: clamp(4px, 0.8vw, 6px);
+  background: #E5E7EB;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: clamp(14px, 3vw, 18px);
+  height: clamp(14px, 3vw, 18px);
+  background: #27550B;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.slider::-moz-range-thumb {
+  width: clamp(14px, 3vw, 18px);
+  height: clamp(14px, 3vw, 18px);
+  background: #27550B;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Цветовые элементы управления */
+.color-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
+}
+
+.color-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.color-input-group.full-width {
+  grid-column: span 2;
+}
+
+.color-label {
+  font-size: clamp(0.75rem, 1.8vw, 0.875rem);
+  font-weight: 500;
+  color: #374151;
+}
+
+.color-input {
+  width: 100%;
+  height: clamp(2rem, 4vw, 2.5rem);
+  border: 1px solid #D1D5DB;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-input:hover {
+  transform: scale(1.02);
+}
+
+/* Кнопки */
+.generate-btn {
+  width: 100%;
+  background: #16A34A;
+  color: white;
+  font-weight: bold;
+  padding: clamp(0.6rem, 2vw, 0.75rem) clamp(0.8rem, 2.5vw, 1rem);
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+  transition: all 0.2s;
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.generate-btn:hover {
+  background: #15803D;
+}
+
+/* Секция загрузки */
+.download-section {
+  margin-top: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.download-title {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
+  text-align: center;
+}
+
+.download-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
+}
+
+.download-btn {
+  padding: clamp(0.5rem, 1.5vw, 0.6rem) clamp(0.75rem, 2vw, 1rem);
+  border-radius: 0.375rem;
+  border: none;
+  font-weight: 500;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.download-btn-png {
+  background: #3B82F6;
+  color: white;
+}
+
+
+.download-btn-svg {
+  background: #8B5CF6;
+  color: white;
+}
+
+
+
+/* Footer */
+.footer {
+  text-align: center;
+  color: #F8F8F8;
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  -webkit-text-stroke: 1px #27550B;
+  margin-top: auto;
+}
+
+/* Медиа-запросы для больших экранов */
+@media (min-width: 768px) {
+  .content-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .parameters-panel {
+    order: 1;
+    flex-shrink: 0;
+    max-width: clamp(300px, 25vw, 400px);
+  }
+  
+  .plant-panel {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .color-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 1.5rem;
+  }
+  
+  .parameters-panel {
+    max-width: 350px;
+  }
+  
+  .download-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .content-layout {
+    gap: 2rem;
+  }
+  
+  .parameters-panel {
+    max-width: 380px;
+  }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 320px) {
+  .color-controls {
+    grid-template-columns: 1fr;
+  }
+  
+  .color-input-group.full-width {
+    grid-column: span 1;
+  }
+  
+  .download-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Планшеты в портретном режиме */
+@media (min-width: 481px) and (max-width: 767px) {
+  .color-controls {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .color-input-group.full-width {
+    grid-column: span 3;
+  }
+}
+
+/* Высокие экраны */
+@media (min-height: 800px) {
+  .plant-generator {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .content-layout {
+    flex: 1;
+  }
+}
+
+/* Темы для устройств с поддержкой темного режима */
+/* @media (prefers-color-scheme: dark) {
+  .parameters-panel,
+  .plant-panel {
+    background: rgba(31, 41, 55, 0.95);
+    border-color: #10B981;
+  }
+  
+  .panel-title,
+  .select-label,
+  .slider-label,
+  .color-label,
+  .download-title {
+    color: #F3F4F6;
+  }
+  
+  .select-input {
+    background: #374151;
+    border-color: #4B5563;
+    color: #F3F4F6;
+  }
+  
+  .canvas-container {
+    background: #1F2937;
+  }
+} */
+
+/* Анимации для улучшения UX */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.parameters-panel,
+.plant-panel {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Улучшение доступности */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Оптимизация для сенсорных устройств */
+@media (pointer: coarse) {
+  .slider {
+    height: 8px;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .generate-btn,
+  .download-btn {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  .color-input {
+    height: 3rem;
+  }
+}
+
+/* Чекбоксы */
+.checkbox-group {
+  margin: 0.5rem 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: clamp(0.75rem, 1.8vw, 0.875rem);
+  color: #374151;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  width: clamp(16px, 3vw, 18px);
+  height: clamp(16px, 3vw, 18px);
+  cursor: pointer;
+}
+
+/* Заголовки разделов */
+.advanced-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #D1D5DB;
+}
+
+.advanced-title {
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+  font-weight: 600;
+  color: #16A34A;
+  margin-bottom: 0.5rem;
 }
