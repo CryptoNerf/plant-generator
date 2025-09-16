@@ -46,29 +46,24 @@ const PlantGenerator = () => {
   const [svgDefs, setSvgDefs] = useState([]);
 
   // Обработка изменения размера экрана
-  const updateScreenSize = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      setScreenSize({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    }
-  }, []);
+    const updateScreenSize = useCallback(() => {
+      if (typeof window !== 'undefined') {
+        setScreenSize({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      }
+    }, []);
 
-  useEffect(() => {
-    updateScreenSize();
-    const handleResize = () => {
+    useEffect(() => {
       updateScreenSize();
-      setTimeout(generatePlant, 100);
-    };
+      window.addEventListener('resize', updateScreenSize);
+      return () => window.removeEventListener('resize', updateScreenSize);
+    }, [updateScreenSize]);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [updateScreenSize]);
-
-  useEffect(() => {
-    generatePlant();
-  }, [plantType, params, screenSize]);
+    useEffect(() => {
+      generatePlant();
+    }, [plantType, params, screenSize]);
 
   const getCanvasSize = useCallback(() => {
     const width = screenSize.width || (typeof window !== 'undefined' ? window.innerWidth : 600);
