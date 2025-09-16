@@ -47,7 +47,7 @@ body {
 
 /* Заголовок - адаптивный */
 .main-title {
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  /* font-family: 'Comic Sans MS', cursive, sans-serif; */
   font-weight: bold;
   color: #F8F8F8;
   -webkit-text-stroke: clamp(1px, 0.3vw, 2px) #27550B;

@@ -488,14 +488,62 @@ const PlantGenerator = () => {
   };
 
   const downloadPNG = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const link = document.createElement('a');
-    link.download = `растение-${plantType}-${Date.now()}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  };
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      // Создаём временный canvas с высоким разрешением
+      const scaleFactor = 4; // Увеличиваем разрешение в 4 раза для высокого качества
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Устанавливаем размер с учётом масштаба
+      const { width: originalWidth, height: originalHeight } = getCanvasSize();
+      tempCanvas.width = originalWidth * scaleFactor;
+      tempCanvas.height = originalHeight * scaleFactor;
+      
+      // Масштабируем контекст
+      tempCtx.scale(scaleFactor, scaleFactor);
+      
+      // Очищаем canvas
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      
+      // Перерисовываем растение в высоком разрешении
+      const centerX = originalWidth / 2;
+      let centerY;
+
+      switch (plantType) {
+        case 'tree':
+        case 'flower':
+          centerY = originalHeight - Math.min(30, originalHeight * 0.1);
+          break;
+        case 'bush':
+          centerY = originalHeight / 2;
+          break;
+        default:
+          centerY = originalHeight - Math.min(30, originalHeight * 0.1);
+      }
+      
+      const tempSvgElements = [];
+      const tempSvgDefs = [];
+      
+      try {
+        if (plantType === 'tree') {
+          drawTree(tempCtx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
+        } else if (plantType === 'flower') {
+          drawFlower(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        } else if (plantType === 'bush') {
+          drawBush(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        }
+      } catch (e) {
+        console.error('Error generating high-res plant:', e);
+      }
+      
+      // Экспортируем в высоком качестве
+      const link = document.createElement('a');
+      link.download = `растение-${plantType}-${Date.now()}.png`;
+      link.href = tempCanvas.toDataURL('image/png', 1.0); // Максимальное качество
+      link.click();
+    };
 
   const downloadSVG = () => {
     const svgContent = generateSVG();
