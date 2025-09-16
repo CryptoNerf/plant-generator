@@ -4,9 +4,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image: url('/forest.png');
@@ -20,8 +18,25 @@ body {
 /* Основные стили */
 .plant-generator {
   min-height: 100vh;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: Arial, sans-serif;
   overflow-x: hidden;
+}
+
+/* Шрифты для разных устройств */
+@supports not (-webkit-touch-callout: none) {
+  /* Не iOS устройства - используем Comic Sans MS */
+  body,
+  .plant-generator {
+    font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+  }
+}
+
+/* Для iOS устройств используем системные шрифты */
+@supports (-webkit-touch-callout: none) {
+  body,
+  .plant-generator {
+    font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  }
 }
 
 .container {
