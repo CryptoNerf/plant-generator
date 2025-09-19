@@ -51,7 +51,7 @@ const App = () => {
   const [customLeafPoints, setCustomLeafPoints] = useState([]);
   const DRAWING_CANVAS_SIZE = 100;
 
-  // Обработка изменения размера экрана
+  // Обработка изменения размера экрана с дебаунсом
   const updateScreenSize = useCallback(() => {
     if (typeof window !== 'undefined') {
       setScreenSize({
@@ -61,11 +61,22 @@ const App = () => {
     }
   }, []);
 
+  // Дебаунс для предотвращения частых перерисовок на мобильных
+  const debouncedUpdateScreenSize = useCallback(() => {
+    clearTimeout(window.resizeTimeout);
+    window.resizeTimeout = setTimeout(updateScreenSize, 300);
+  }, [updateScreenSize]);
+
   useEffect(() => {
     updateScreenSize();
-    window.addEventListener('resize', updateScreenSize);
-    return () => window.removeEventListener('resize', updateScreenSize);
-  }, [updateScreenSize]);
+    window.addEventListener('resize', debouncedUpdateScreenSize);
+    return () => {
+      window.removeEventListener('resize', debouncedUpdateScreenSize);
+      if (window.resizeTimeout) {
+        clearTimeout(window.resizeTimeout);
+      }
+    };
+  }, [debouncedUpdateScreenSize]);
 
   useEffect(() => {
     generatePlant();
