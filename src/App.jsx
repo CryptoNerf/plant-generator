@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-const PlantGenerator = () => {
+const App = () => {
   const canvasRef = useRef();
+  const drawingRef = useRef();
+  const previewCtxRef = useRef(null);
+  const drawingState = useRef({ isDrawing: false, points: [] });
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [params, setParams] = useState({
@@ -15,9 +18,9 @@ const PlantGenerator = () => {
     color: '#8B4513',
     leafColor: '#228B22',
     centerColor: '#FFD700',
-    centerSize: 10, // Добавлено для исправления слайдера в цветке
+    centerSize: 10,
 
-    // Новые параметры для градиента и обводки (исправлена согласованность имён)
+    // Новые параметры для градиента и обводки
     UseGradient: false,
     GradientStartColor: '#8B4513',
     GradientEndColor: '#A0522D',
@@ -41,29 +44,32 @@ const PlantGenerator = () => {
     centerStrokeColor: '#8B4513',
     centerStrokeWidth: 1,
   });
-  
+
   const [svgElements, setSvgElements] = useState([]);
   const [svgDefs, setSvgDefs] = useState([]);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [customLeafPoints, setCustomLeafPoints] = useState([]);
+  const DRAWING_CANVAS_SIZE = 100;
 
   // Обработка изменения размера экрана
-    const updateScreenSize = useCallback(() => {
-      if (typeof window !== 'undefined') {
-        setScreenSize({
-          width: window.innerWidth,
-          height: window.innerHeight
-        });
-      }
-    }, []);
+  const updateScreenSize = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      setScreenSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }
+  }, []);
 
-    useEffect(() => {
-      updateScreenSize();
-      window.addEventListener('resize', updateScreenSize);
-      return () => window.removeEventListener('resize', updateScreenSize);
-    }, [updateScreenSize]);
+  useEffect(() => {
+    updateScreenSize();
+    window.addEventListener('resize', updateScreenSize);
+    return () => window.removeEventListener('resize', updateScreenSize);
+  }, [updateScreenSize]);
 
-    useEffect(() => {
-      generatePlant();
-    }, [plantType, params, screenSize]);
+  useEffect(() => {
+    generatePlant();
+  }, [plantType, params, screenSize, customLeafPoints]);
 
   const getCanvasSize = useCallback(() => {
     const width = screenSize.width || (typeof window !== 'undefined' ? window.innerWidth : 600);
@@ -124,7 +130,7 @@ const PlantGenerator = () => {
     
     setSvgElements(tempSvgElements);
     setSvgDefs(tempSvgDefs);
-  }, [plantType, params, getCanvasSize]);
+  }, [plantType, params, getCanvasSize, customLeafPoints]);
 
   const createGradient = (ctx, x1, y1, x2, y2, startColor, endColor, id, svgDefs) => {
     svgDefs.push(
@@ -157,7 +163,7 @@ const PlantGenerator = () => {
     
     if (!isFinite(endX) || !isFinite(endY) || !isFinite(x) || !isFinite(y)) return;
 
-    let strokeStyle = params.color; // <-- по умолчанию цвет
+    let strokeStyle = params.color;
     let svgStroke = params.color;
     let strokeOutlineColor = params.StrokeColor;
     let useStrokeOutline = params.UseStroke;
@@ -211,8 +217,10 @@ const PlantGenerator = () => {
 
     svgElements.push(svgLine);
     
+    // ИСПРАВЛЕНО: передаем правильный угол поворота для листьев
     if (level <= 2 && Math.random() < params.leafDensity) {
-      drawLeaf(ctx, endX, endY, svgElements, svgDefs, scale);
+      const leafRotation = angle + (Math.random() - 0.5) * Math.PI * 0.5;
+      drawLeaf(ctx, endX, endY, svgElements, svgDefs, scale, leafRotation);
     }
     
     const newLength = length * 0.75;
@@ -226,72 +234,162 @@ const PlantGenerator = () => {
     }
   };
 
-  const drawLeaf = (ctx, x, y, svgElements, svgDefs, scale = 1) => {
+  const drawLeaf = (ctx, x, y, svgElements, svgDefs, scale = 1, rotation = Math.random() * Math.PI * 2) => {
     if (!isFinite(x) || !isFinite(y)) return;
     
-    const rotation = Math.random() * Math.PI * 2;
-    const rx = Math.max(2, (params.leafSize / 2) * scale);
-    const ry = Math.max(3, params.leafSize * scale);
-    
+    const rotDeg = rotation * 180 / Math.PI;
     let fillStyle = params.leafColor;
     let strokeStyle = params.leafStrokeColor;
     let useStroke = params.leafUseStroke;
     let strokeWidth = params.leafStrokeWidth;
 
-    const rotationDeg = (rotation * 180) / Math.PI;
+    if (customLeafPoints.length === 0) {
+      // Fallback to ellipse
+      const rx = Math.max(2, (params.leafSize / 2) * scale);
+      const ry = Math.max(3, params.leafSize * scale);
 
-    if (ctx) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
+      if (ctx) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
 
-      if (params.leafUseGradient) {
-        const gradient = ctx.createLinearGradient(-rx, 0, rx, 0);
-        gradient.addColorStop(0, params.leafGradientStartColor);
-        gradient.addColorStop(1, params.leafGradientEndColor);
-        fillStyle = gradient;
+        if (params.leafUseGradient) {
+          const gradient = ctx.createLinearGradient(-rx, 0, rx, 0);
+          gradient.addColorStop(0, params.leafGradientStartColor);
+          gradient.addColorStop(1, params.leafGradientEndColor);
+          fillStyle = gradient;
+        }
+
+        ctx.fillStyle = fillStyle;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (useStroke) {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = strokeWidth;
+          ctx.stroke();
+        }
+        ctx.restore();
       }
 
-      ctx.fillStyle = fillStyle;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // Для SVG
+      let svgFill = params.leafColor;
+      if (params.leafUseGradient) {
+        const gradientId = `leafGrad_${Math.random().toString(36).substr(2, 9)}`;
+        svgDefs.push(
+          `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotDeg} 0.5 0.5)">
+            <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
+            <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
+          </linearGradient>`
+        );
+        svgFill = `url(#${gradientId})`;
+      }
+
+      const svgLeaf = {
+        type: 'ellipse',
+        cx: x, cy: y,
+        rx, ry,
+        fill: svgFill,
+        rotation: rotation
+      };
 
       if (useStroke) {
-        ctx.strokeStyle = strokeStyle;
-        ctx.lineWidth = strokeWidth;
-        ctx.stroke();
+        svgLeaf.stroke = strokeStyle;
+        svgLeaf.strokeWidth = strokeWidth;
       }
-      ctx.restore();
+
+      svgElements.push(svgLeaf);
+    } else {
+      // ИСПРАВЛЕНО: Custom path с правильным позиционированием и градиентом
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      customLeafPoints.forEach(p => {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+      });
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const maxDim = Math.max(width, height);
+      if (maxDim === 0) return;
+      
+      // ИСПРАВЛЕНО: правильный центр для кастомного листа
+      const shapeCenterX = (minX + maxX) / 2;
+      const shapeCenterY = (minY + maxY) / 2;
+      const leafScale = (params.leafSize * scale) / maxDim;
+
+      if (ctx) {
+        ctx.save();
+        ctx.translate(x, y); // Перемещаем в позицию на дереве
+        ctx.rotate(rotation); // Поворачиваем лист
+        ctx.scale(leafScale, leafScale); // Масштабируем
+        ctx.translate(-shapeCenterX, -shapeCenterY); // ИСПРАВЛЕНО: центрируем форму листа
+        
+        // ИСПРАВЛЕНО: создаем градиент в правильных координатах
+        let fillStyle = params.leafColor;
+        if (params.leafUseGradient) {
+          const gradient = ctx.createLinearGradient(minX, shapeCenterY, maxX, shapeCenterY);
+          gradient.addColorStop(0, params.leafGradientStartColor);
+          gradient.addColorStop(1, params.leafGradientEndColor);
+          fillStyle = gradient;
+        }
+        
+        ctx.fillStyle = fillStyle;
+        ctx.beginPath();
+        if (customLeafPoints.length > 0) {
+          ctx.moveTo(customLeafPoints[0].x, customLeafPoints[0].y);
+          for (let i = 1; i < customLeafPoints.length; i++) {
+            ctx.lineTo(customLeafPoints[i].x, customLeafPoints[i].y);
+          }
+          ctx.closePath();
+        }
+        ctx.fill();
+        if (useStroke) {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = strokeWidth / leafScale;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Для SVG
+      let svgFill = params.leafColor;
+      if (params.leafUseGradient) {
+        const gradientId = `leafGrad_${Math.random().toString(36).substr(2, 9)}`;
+        svgDefs.push(
+          `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotDeg} 0.5 0.5)">
+            <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
+            <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
+          </linearGradient>`
+        );
+        svgFill = `url(#${gradientId})`;
+      }
+
+      let d = '';
+      if (customLeafPoints.length > 0) {
+        d = `M ${customLeafPoints[0].x} ${customLeafPoints[0].y}`;
+        for (let i = 1; i < customLeafPoints.length; i++) {
+          d += ` L ${customLeafPoints[i].x} ${customLeafPoints[i].y}`;
+        }
+        d += ' Z';
+      }
+
+      const svgLeaf = {
+        type: 'path',
+        d,
+        fill: svgFill,
+        transform: `translate(${x} ${y}) rotate(${rotDeg}) scale(${leafScale} ${leafScale}) translate(${-shapeCenterX} ${-shapeCenterY})`
+      };
+
+      if (useStroke) {
+        svgLeaf.stroke = strokeStyle;
+        svgLeaf['stroke-width'] = strokeWidth;
+        svgLeaf['vector-effect'] = 'non-scaling-stroke';
+      }
+
+      svgElements.push(svgLeaf);
     }
-
-    // Для SVG
-    let svgFill = params.leafColor;
-    if (params.leafUseGradient) {
-      const gradientId = `leafGrad_${Math.random().toString(36).substr(2, 9)}`;
-      svgDefs.push(
-        `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotationDeg} 0.5 0.5)">
-          <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
-          <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
-        </linearGradient>`
-      );
-      svgFill = `url(#${gradientId})`;
-    }
-
-    const svgLeaf = {
-      type: 'ellipse',
-      cx: x, cy: y,
-      rx, ry,
-      fill: svgFill,
-      rotation: rotation
-    };
-
-    if (useStroke) {
-      svgLeaf.stroke = strokeStyle;
-      svgLeaf.strokeWidth = strokeWidth;
-    }
-
-    svgElements.push(svgLeaf);
   };
 
   const drawFlower = (ctx, centerX, centerY, svgElements, svgDefs) => {
@@ -321,12 +419,10 @@ const PlantGenerator = () => {
       ctx.moveTo(centerX, centerY);
       ctx.lineTo(centerX, stemEndY);
       if (stemUseStroke) {
-        // Сначала обводка
         ctx.strokeStyle = stemStrokeStyle;
         ctx.lineWidth = stemThickness + 2 * stemStrokeWidth;
         ctx.stroke();
 
-        // Затем основной
         ctx.strokeStyle = stemFillStyle;
         ctx.lineWidth = stemThickness;
         ctx.stroke();
@@ -355,75 +451,14 @@ const PlantGenerator = () => {
     svgElements.push(svgStem);
     
     const petals = Math.max(3, Math.min(params.branches, 15));
-    const petalLength = Math.max(10, Math.min((params.leafSize * 2) * scale, 50));
+    const petalOffset = params.leafSize * 1.5 * scale;
     
     for (let i = 0; i < petals; i++) {
       const angle = (i * Math.PI * 2) / petals;
-      const petalX = centerX + Math.cos(angle) * petalLength;
-      const petalY = stemEndY + Math.sin(angle) * petalLength;
-      
-      const rx = Math.max(3, (petalLength / 3) * scale);
-      const ry = Math.max(2, (petalLength / 6) * scale);
-      
-      let petalFillStyle = params.leafColor;
-      let petalStrokeStyle = params.leafStrokeColor;
-      let petalUseStroke = params.leafUseStroke;
-      let petalStrokeWidth = params.leafStrokeWidth;
-
-      const rotationDeg = (angle * 180) / Math.PI;
-
-      if (ctx) {
-        ctx.save();
-        ctx.translate(petalX, petalY);
-        ctx.rotate(angle);
-
-        if (params.leafUseGradient) {
-          const gradient = ctx.createLinearGradient(-rx, 0, rx, 0);
-          gradient.addColorStop(0, params.leafGradientStartColor);
-          gradient.addColorStop(1, params.leafGradientEndColor);
-          petalFillStyle = gradient;
-        }
-
-        ctx.fillStyle = petalFillStyle;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (petalUseStroke) {
-          ctx.strokeStyle = petalStrokeStyle;
-          ctx.lineWidth = petalStrokeWidth;
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-      
-      // Для SVG лепестков
-      let svgPetalFill = params.leafColor;
-      if (params.leafUseGradient) {
-        const gradientId = `petalGrad_${Math.random().toString(36).substr(2, 9)}`;
-        svgDefs.push(
-          `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotationDeg} 0.5 0.5)">
-            <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
-            <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
-          </linearGradient>`
-        );
-        svgPetalFill = `url(#${gradientId})`;
-      }
-
-      const svgPetal = {
-        type: 'ellipse',
-        cx: petalX, cy: petalY,
-        rx, ry,
-        fill: svgPetalFill,
-        rotation: angle
-      };
-
-      if (petalUseStroke) {
-        svgPetal.stroke = petalStrokeStyle;
-        svgPetal.strokeWidth = petalStrokeWidth;
-      }
-
-      svgElements.push(svgPetal);
+      const petalX = centerX + Math.cos(angle) * petalOffset;
+      const petalY = stemEndY + Math.sin(angle) * petalOffset;
+      // ИСПРАВЛЕНО: правильная ориентация лепестков
+      drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale, angle + Math.PI/2);
     }
     
     const centerRadius = Math.max(3, Math.min(params.centerSize * scale, 25));
@@ -486,6 +521,104 @@ const PlantGenerator = () => {
   const handleParamChange = (param, value) => {
     setParams(prev => ({ ...prev, [param]: value }));
   };
+
+  // Drawing functions
+  const handleMouseDown = (e) => {
+    drawingState.current.isDrawing = true;
+    drawingState.current.points = [];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (DRAWING_CANVAS_SIZE / rect.width);
+    const y = (e.clientY - rect.top) * (DRAWING_CANVAS_SIZE / rect.height);
+    drawingState.current.points.push({ x, y });
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e) => {
+    if (!drawingState.current.isDrawing) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (DRAWING_CANVAS_SIZE / rect.width);
+    const y = (e.clientY - rect.top) * (DRAWING_CANVAS_SIZE / rect.height);
+    drawingState.current.points.push({ x, y });
+    const ctx = previewCtxRef.current;
+    if (ctx) {
+      ctx.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
+      if (drawingState.current.points.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(drawingState.current.points[0].x, drawingState.current.points[0].y);
+        for (let i = 1; i < drawingState.current.points.length; i++) {
+          ctx.lineTo(drawingState.current.points[i].x, drawingState.current.points[i].y);
+        }
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  };
+
+  const handleMouseUp = (e) => {
+    drawingState.current.isDrawing = false;
+    const points = [...drawingState.current.points];
+    if (points.length > 1) {
+      setCustomLeafPoints(points);
+      const ctx = previewCtxRef.current;
+      if (ctx) {
+        ctx.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  };
+
+  const handleMouseLeave = (e) => {
+    if (drawingState.current.isDrawing) {
+      handleMouseUp(e);
+    }
+  };
+
+  const clearDrawing = () => {
+    setCustomLeafPoints([]);
+    drawingState.current.points = [];
+    drawingState.current.isDrawing = false;
+    const ctx = previewCtxRef.current;
+    if (ctx) {
+      ctx.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
+    }
+  };
+
+  const acceptDrawing = () => {
+    setIsDrawingMode(false);
+  };
+
+  useEffect(() => {
+    if (isDrawingMode && drawingRef.current) {
+      const canvas = drawingRef.current;
+      canvas.width = DRAWING_CANVAS_SIZE;
+      canvas.height = DRAWING_CANVAS_SIZE;
+      canvas.style.width = '100px';
+      canvas.style.height = '100px';
+      previewCtxRef.current = canvas.getContext('2d');
+      previewCtxRef.current.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
+      if (customLeafPoints.length > 0) {
+        const ctx = previewCtxRef.current;
+        ctx.beginPath();
+        ctx.moveTo(customLeafPoints[0].x, customLeafPoints[0].y);
+        for (let i = 1; i < customLeafPoints.length; i++) {
+          ctx.lineTo(customLeafPoints[i].x, customLeafPoints[i].y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  }, [isDrawingMode, customLeafPoints]);
 
   const downloadPNG = () => {
       const canvas = canvasRef.current;
@@ -559,7 +692,7 @@ const PlantGenerator = () => {
   const generateSVG = () => {
     const { width: svgWidth, height: svgHeight } = getCanvasSize();
     
-    const defsStr = svgDefs.join('\n    '); // <-- ВАЖНО: это строки, а не JSX!
+    const defsStr = svgDefs.join('\n    ');
     
     const svgElements_str = svgElements.map(element => {
       switch (element.type) {
@@ -586,6 +719,13 @@ const PlantGenerator = () => {
             circleStrokeAttrs = `stroke="${element.stroke}" stroke-width="${element.strokeWidth}"`;
           }
           return `<circle cx="${element.cx}" cy="${element.cy}" r="${element.r}" fill="${element.fill}" ${circleStrokeAttrs}/>`;
+        case 'path':
+          let pathStr = `<path d="${element.d}" fill="${element.fill}" transform="${element.transform}"`;
+          if (element.stroke) {
+            pathStr += ` stroke="${element.stroke}" stroke-width="${element['stroke-width']}" vector-effect="${element['vector-effect']}"`;
+          }
+          pathStr += ' />';
+          return pathStr;
         default:
           return '';
       }
@@ -825,6 +965,14 @@ const PlantGenerator = () => {
                 params.leafStrokeWidth,
                 params.leafUseStroke
               )}
+              <div className="custom-leaf-section">
+                <button 
+                  onClick={() => setIsDrawingMode(true)} 
+                  className="custom-btn"
+                >
+                  🎨 Нарисовать форму листа
+                </button>
+              </div>
             </div>
           </>
         );
@@ -975,6 +1123,14 @@ const PlantGenerator = () => {
                 params.leafStrokeWidth,
                 params.leafUseStroke
               )}
+              <div className="custom-leaf-section">
+                <button 
+                  onClick={() => setIsDrawingMode(true)} 
+                  className="custom-btn"
+                >
+                  🎨 Нарисовать форму листа
+                </button>
+              </div>
             </div>
           </>
         );
@@ -1109,6 +1265,14 @@ const PlantGenerator = () => {
                 params.leafStrokeWidth,
                 params.leafUseStroke
               )}
+              <div className="custom-leaf-section">
+                <button 
+                  onClick={() => setIsDrawingMode(true)} 
+                  className="custom-btn"
+                >
+                  🎨 Нарисовать форму лепестка
+                </button>
+              </div>
             </div>
 
             <div className="advanced-section">
@@ -1160,6 +1324,26 @@ const PlantGenerator = () => {
             <div className="controls-section">
               {renderSliders()}
             </div>
+
+            {isDrawingMode && (
+              <div className="drawing-container">
+                <h4>Нарисуйте форму листа/лепестка (начните рисовать мышью, отпустите для закрытия)</h4>
+                <canvas
+                  ref={drawingRef}
+                  width={DRAWING_CANVAS_SIZE}
+                  height={DRAWING_CANVAS_SIZE}
+                  style={{ border: '1px solid #ccc', cursor: 'crosshair', display: 'block', margin: '10px auto' }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
+                />
+                <div style={{ textAlign: 'center' }}>
+                  <button onClick={clearDrawing} style={{ marginRight: '10px' }}>Очистить</button>
+                  <button onClick={acceptDrawing}>Принять и закрыть</button>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={generatePlant}
@@ -1215,4 +1399,4 @@ const PlantGenerator = () => {
   );
 };
 
-export default PlantGenerator;
+export default App;
