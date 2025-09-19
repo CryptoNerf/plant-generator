@@ -533,23 +533,38 @@ const App = () => {
     setParams(prev => ({ ...prev, [param]: value }));
   };
 
-  // Drawing functions
-  const handleMouseDown = (e) => {
+  // Drawing functions с поддержкой touch событий
+  const getEventPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if (e.touches) {
+      // Touch событие
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      // Mouse событие
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const x = (clientX - rect.left) * (DRAWING_CANVAS_SIZE / rect.width);
+    const y = (clientY - rect.top) * (DRAWING_CANVAS_SIZE / rect.height);
+    return { x, y };
+  };
+
+  const handleDrawStart = (e) => {
     drawingState.current.isDrawing = true;
     drawingState.current.points = [];
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (DRAWING_CANVAS_SIZE / rect.width);
-    const y = (e.clientY - rect.top) * (DRAWING_CANVAS_SIZE / rect.height);
-    drawingState.current.points.push({ x, y });
+    const pos = getEventPos(e, e.currentTarget);
+    drawingState.current.points.push(pos);
     e.preventDefault();
   };
 
-  const handleMouseMove = (e) => {
+  const handleDrawMove = (e) => {
     if (!drawingState.current.isDrawing) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (DRAWING_CANVAS_SIZE / rect.width);
-    const y = (e.clientY - rect.top) * (DRAWING_CANVAS_SIZE / rect.height);
-    drawingState.current.points.push({ x, y });
+    const pos = getEventPos(e, e.currentTarget);
+    drawingState.current.points.push(pos);
     const ctx = previewCtxRef.current;
     if (ctx) {
       ctx.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
@@ -564,9 +579,10 @@ const App = () => {
         ctx.stroke();
       }
     }
+    e.preventDefault();
   };
 
-  const handleMouseUp = (e) => {
+  const handleDrawEnd = (e) => {
     drawingState.current.isDrawing = false;
     const points = [...drawingState.current.points];
     if (points.length > 1) {
@@ -585,11 +601,17 @@ const App = () => {
         ctx.stroke();
       }
     }
+    e.preventDefault();
   };
+
+  // Старые функции заменены на новые выше
+  const handleMouseDown = handleDrawStart;
+  const handleMouseMove = handleDrawMove;
+  const handleMouseUp = handleDrawEnd;
 
   const handleMouseLeave = (e) => {
     if (drawingState.current.isDrawing) {
-      handleMouseUp(e);
+      handleDrawEnd(e);
     }
   };
 
@@ -1343,11 +1365,21 @@ const App = () => {
                   ref={drawingRef}
                   width={DRAWING_CANVAS_SIZE}
                   height={DRAWING_CANVAS_SIZE}
-                  style={{ border: '1px solid #ccc', cursor: 'crosshair', display: 'block', margin: '10px auto' }}
+                  style={{ 
+                    border: '1px solid #ccc', 
+                    cursor: 'crosshair', 
+                    display: 'block', 
+                    margin: '10px auto',
+                    touchAction: 'none' // Предотвращаем скролл при рисовании на touch устройствах
+                  }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseLeave}
+                  onTouchStart={handleDrawStart}
+                  onTouchMove={handleDrawMove}
+                  onTouchEnd={handleDrawEnd}
+                  onTouchCancel={handleDrawEnd}
                 />
                 <div style={{ textAlign: 'center' }}>
                   <button onClick={clearDrawing} style={{ marginRight: '10px' }}>Очистить</button>
