@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base Styles */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -15,23 +16,19 @@ body {
   min-height: 100vh;
 }
 
-/* Основные стили */
 .plant-generator {
   min-height: 100vh;
-  font-family: Arial, sans-serif;
   overflow-x: hidden;
 }
 
-/* Шрифты для разных устройств */
+/* Typography Adjustments for Devices */
 @supports not (-webkit-touch-callout: none) {
-  /* Не iOS устройства - используем Comic Sans MS */
   body,
   .plant-generator {
     font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
   }
 }
 
-/* Для iOS устройств используем системные шрифты */
 @supports (-webkit-touch-callout: none) {
   body,
   .plant-generator {
@@ -39,15 +36,27 @@ body {
   }
 }
 
+/* Layout */
 .container {
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(0.75rem, 2vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-/* Заголовок - адаптивный */
+.content-layout {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  align-items: stretch;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+  flex: 1;
+}
+
+/* Components */
 .main-title {
-  /* font-family: 'Comic Sans MS', cursive, sans-serif; */
   font-weight: bold;
   color: #F8F8F8;
   -webkit-text-stroke: clamp(1px, 0.3vw, 2px) #27550B;
@@ -58,27 +67,15 @@ body {
   line-height: 1.1;
 }
 
-/* Основная раскладка - адаптивная */
-.content-layout {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(1rem, 2vw, 1.5rem);
-  align-items: stretch;
-  margin-bottom: clamp(2rem, 4vw, 3rem);
-}
-
-/* Панель параметров */
 .parameters-panel {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: clamp(8px, 1.5vw, 12px);
   padding: clamp(1rem, 2.5vw, 1.5rem);
-  /* border: 2px solid #27550B; */
   width: 100%;
   order: 2;
 }
 
-/* Панель с растением */
 .plant-panel {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -86,6 +83,9 @@ body {
   padding: clamp(0.75rem, 2vw, 1rem);
   width: 100%;
   order: 1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .panel-title {
@@ -96,14 +96,12 @@ body {
   text-align: center;
 }
 
-/* Canvas контейнер */
 .canvas-container {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
   overflow: hidden;
-  /* border-radius: 8px; */
   min-height: 250px;
 }
 
@@ -113,7 +111,6 @@ body {
   border-radius: 8px;
 }
 
-/* Элементы управления */
 .select-group {
   margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
 }
@@ -192,7 +189,6 @@ body {
   transform: scale(1.1);
 }
 
-/* Цветовые элементы управления */
 .color-controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -228,7 +224,6 @@ body {
   transform: scale(1.02);
 }
 
-/* Кнопки */
 .generate-btn {
   width: 100%;
   background: #16A34A;
@@ -240,14 +235,12 @@ body {
   cursor: pointer;
   font-size: clamp(0.9rem, 2.2vw, 1rem);
   transition: all 0.2s;
-  /* margin-bottom: clamp(1rem, 2.5vw, 1.5rem); */
 }
 
 .generate-btn:hover {
   background: #15803D;
 }
 
-/* Секция загрузки */
 .download-section {
   margin-top: clamp(1rem, 2.5vw, 1.5rem);
 }
@@ -282,15 +275,11 @@ body {
   color: white;
 }
 
-
 .download-btn-svg {
   background: #8B5CF6;
   color: white;
 }
 
-
-
-/* Footer */
 .footer {
   text-align: center;
   color: #F8F8F8;
@@ -299,179 +288,6 @@ body {
   margin-top: auto;
 }
 
-/* Медиа-запросы для больших экранов */
-@media (min-width: 768px) {
-  .content-layout {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  
-  .parameters-panel {
-    order: 1;
-    flex-shrink: 0;
-    max-width: clamp(300px, 25vw, 400px);
-  }
-  
-  .plant-panel {
-    order: 2;
-    flex: 1;
-    min-width: 0;
-  }
-  
-  .color-controls {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    padding: 1.5rem;
-  }
-  
-  .parameters-panel {
-    max-width: 350px;
-  }
-  
-  .download-buttons {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (min-width: 1200px) {
-  .content-layout {
-    gap: 2rem;
-  }
-  
-  .parameters-panel {
-    max-width: 380px;
-  }
-}
-
-/* Очень маленькие экраны */
-@media (max-width: 320px) {
-  .color-controls {
-    grid-template-columns: 1fr;
-  }
-  
-  .color-input-group.full-width {
-    grid-column: span 1;
-  }
-  
-  .download-buttons {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Планшеты в портретном режиме */
-@media (min-width: 481px) and (max-width: 767px) {
-  .color-controls {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .color-input-group.full-width {
-    grid-column: span 3;
-  }
-}
-
-/* Высокие экраны */
-@media (min-height: 800px) {
-  .plant-generator {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .content-layout {
-    flex: 1;
-  }
-}
-
-/* Темы для устройств с поддержкой темного режима */
-/* @media (prefers-color-scheme: dark) {
-  .parameters-panel,
-  .plant-panel {
-    background: rgba(31, 41, 55, 0.95);
-    border-color: #10B981;
-  }
-  
-  .panel-title,
-  .select-label,
-  .slider-label,
-  .color-label,
-  .download-title {
-    color: #F3F4F6;
-  }
-  
-  .select-input {
-    background: #374151;
-    border-color: #4B5563;
-    color: #F3F4F6;
-  }
-  
-  .canvas-container {
-    background: #1F2937;
-  }
-} */
-
-/* Анимации для улучшения UX */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.parameters-panel,
-.plant-panel {
-  animation: fadeIn 0.6s ease-out;
-}
-
-/* Улучшение доступности */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* Оптимизация для сенсорных устройств */
-@media (pointer: coarse) {
-  .slider {
-    height: 8px;
-  }
-  
-  .slider::-webkit-slider-thumb {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .slider::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .generate-btn,
-  .download-btn {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-  }
-  
-  .color-input {
-    height: 3rem;
-  }
-}
-
-/* Чекбоксы */
 .checkbox-group {
   margin: 0.5rem 0;
 }
@@ -491,7 +307,6 @@ body {
   cursor: pointer;
 }
 
-/* Заголовки разделов */
 .advanced-section {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -503,4 +318,223 @@ body {
   font-weight: 600;
   color: #16A34A;
   margin-bottom: 0.5rem;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.random-btn {
+  background: #F59E0B !important;
+}
+
+.random-btn:hover {
+  background: #D97706 !important;
+}
+
+.drawing-container {
+  margin-top: clamp(0.75rem, 2vw, 1rem);
+  padding: clamp(0.5rem, 1.5vw, 0.75rem);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: clamp(8px, 1.5vw, 12px);
+  text-align: center;
+}
+
+.drawing-container h4 {
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.custom-btn {
+  background: #10B981;
+  color: white;
+  font-weight: 500;
+  padding: clamp(0.5rem, 1.5vw, 0.6rem) clamp(0.75rem, 2vw, 1rem);
+  border-radius: 0.375rem;
+  border: none;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.custom-btn:hover {
+  background: #059669;
+}
+
+.drawing-container button {
+  background: #6B7280;
+  color: white;
+  font-weight: 500;
+  padding: clamp(0.4rem, 1.2vw, 0.5rem) clamp(0.6rem, 1.8vw, 0.8rem);
+  border-radius: 0.375rem;
+  border: none;
+  font-size: clamp(0.75rem, 1.8vw, 0.875rem);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.drawing-container button:hover {
+  background: #4B5563;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.parameters-panel,
+.plant-panel {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Media Queries */
+@media (min-width: 768px) {
+  .content-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .parameters-panel {
+    order: 1;
+    flex-shrink: 0;
+    max-width: clamp(300px, 25vw, 400px);
+  }
+
+  .plant-panel {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+    position: sticky;
+    top: clamp(1rem, 2vw, 1.5rem);
+    align-self: flex-start;
+    z-index: 10;
+  }
+
+  .color-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 1.5rem;
+  }
+
+  .parameters-panel {
+    max-width: 350px;
+  }
+
+  .download-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .content-layout {
+    gap: 2rem;
+  }
+
+  .parameters-panel {
+    max-width: 380px;
+  }
+}
+
+@media (max-width: 320px) {
+  .color-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .color-input-group.full-width {
+    grid-column: span 1;
+  }
+
+  .download-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .color-controls {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .color-input-group.full-width {
+    grid-column: span 3;
+  }
+}
+
+@media (min-height: 800px) {
+  .plant-generator {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .content-layout {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .slider {
+    height: 8px;
+  }
+
+  .slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .generate-btn,
+  .download-btn {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .color-input {
+    height: 3rem;
+  }
+}
+
+@media (min-width: 480px) {
+  .button-group {
+    flex-direction: row;
+  }
+
+  .generate-btn,
+  .random-btn {
+    flex: 1;
+  }
 }

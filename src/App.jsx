@@ -49,7 +49,7 @@ const App = () => {
   const [svgDefs, setSvgDefs] = useState([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [customLeafPoints, setCustomLeafPoints] = useState([]);
-  const DRAWING_CANVAS_SIZE = 100;
+  const DRAWING_CANVAS_SIZE = 250;
 
   // Обработка изменения размера экрана с дебаунсом
   const updateScreenSize = useCallback(() => {
@@ -533,6 +533,101 @@ const App = () => {
     setParams(prev => ({ ...prev, [param]: value }));
   };
 
+  const generateRandomParams = () => {
+    const getRandomColor = () => {
+      const colors = [
+        '#8B4513', '#A0522D', '#DEB887', '#CD853F', '#D2B48C', '#F4A460', '#228B22', 
+        '#32CD32', '#7CFC00', '#9ACD32', '#6B8E23', '#008000', '#FFD700', '#FFA500',
+        '#FF6347', '#DC143C', '#8A2BE2', '#4B0082', '#800080', '#FF1493'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    };
+
+    const randomBetween = (min, max, step = 1) => {
+      const range = (max - min) / step;
+      return min + Math.floor(Math.random() * (range + 1)) * step;
+    };
+
+    let newParams = { ...params };
+
+    switch (plantType) {
+      case 'tree':
+        newParams = {
+          ...newParams,
+          branches: randomBetween(2, 8),
+          length: randomBetween(40, 120),
+          angle: randomBetween(10, 45),
+          thickness: randomBetween(3, 15),
+          levels: randomBetween(2, 6),
+          leafSize: randomBetween(6, 20),
+          leafDensity: randomBetween(0, 10, 1) / 10,
+          color: getRandomColor(),
+          leafColor: getRandomColor()
+        };
+        break;
+      case 'bush':
+        newParams = {
+          ...newParams,
+          branches: randomBetween(2, 10),
+          length: randomBetween(30, 100),
+          angle: randomBetween(10, 60),
+          thickness: randomBetween(2, 10),
+          levels: randomBetween(1, 4),
+          leafSize: randomBetween(5, 15),
+          leafDensity: randomBetween(0, 10, 1) / 10,
+          color: getRandomColor(),
+          leafColor: getRandomColor()
+        };
+        break;
+      case 'flower':
+        newParams = {
+          ...newParams,
+          branches: randomBetween(3, 12),
+          length: randomBetween(50, 150),
+          thickness: randomBetween(2, 10),
+          leafSize: randomBetween(6, 20),
+          centerSize: randomBetween(5, 20),
+          color: getRandomColor(),
+          leafColor: getRandomColor(),
+          centerColor: getRandomColor()
+        };
+        break;
+    }
+
+    // Случайные градиенты и обводки
+    const useGradient = Math.random() < 0.3; // 30% шанс
+    const useStroke = Math.random() < 0.2; // 20% шанс
+    const leafUseGradient = Math.random() < 0.3;
+    const leafUseStroke = Math.random() < 0.2;
+
+    newParams.UseGradient = useGradient;
+    newParams.GradientStartColor = getRandomColor();
+    newParams.GradientEndColor = getRandomColor();
+    newParams.UseStroke = useStroke;
+    newParams.StrokeColor = getRandomColor();
+    newParams.StrokeWidth = randomBetween(1, 10, 1) / 2;
+
+    newParams.leafUseGradient = leafUseGradient;
+    newParams.leafGradientStartColor = getRandomColor();
+    newParams.leafGradientEndColor = getRandomColor();
+    newParams.leafUseStroke = leafUseStroke;
+    newParams.leafStrokeColor = getRandomColor();
+    newParams.leafStrokeWidth = randomBetween(1, 10, 1) / 2;
+
+    if (plantType === 'flower') {
+      const centerUseGradient = Math.random() < 0.3;
+      const centerUseStroke = Math.random() < 0.2;
+      newParams.centerUseGradient = centerUseGradient;
+      newParams.centerGradientStartColor = getRandomColor();
+      newParams.centerGradientEndColor = getRandomColor();
+      newParams.centerUseStroke = centerUseStroke;
+      newParams.centerStrokeColor = getRandomColor();
+      newParams.centerStrokeWidth = randomBetween(1, 10, 1) / 2;
+    }
+
+    setParams(newParams);
+  };
+
   // Drawing functions с поддержкой touch событий
   const getEventPos = (e, canvas) => {
     const rect = canvas.getBoundingClientRect();
@@ -634,8 +729,8 @@ const App = () => {
       const canvas = drawingRef.current;
       canvas.width = DRAWING_CANVAS_SIZE;
       canvas.height = DRAWING_CANVAS_SIZE;
-      canvas.style.width = '100px';
-      canvas.style.height = '100px';
+      canvas.style.width = '250px';
+      canvas.style.height = '250px';
       previewCtxRef.current = canvas.getContext('2d');
       previewCtxRef.current.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
       if (customLeafPoints.length > 0) {
@@ -1129,7 +1224,6 @@ const App = () => {
               </div>
             </div>
 
-            {/* Градиент и обводка */}
             <div className="advanced-section">
               <h3 className="advanced-title">🎨 Дополнительно для веток</h3>
               {renderGradientControls(
@@ -1271,7 +1365,6 @@ const App = () => {
               </div>
             </div>
 
-            {/* Градиент и обводка */}
             <div className="advanced-section">
               <h3 className="advanced-title">🌿 Дополнительно для стебля</h3>
               {renderGradientControls(
@@ -1370,7 +1463,9 @@ const App = () => {
                     cursor: 'crosshair', 
                     display: 'block', 
                     margin: '10px auto',
-                    touchAction: 'none' // Предотвращаем скролл при рисовании на touch устройствах
+                    touchAction: 'none',
+                    width: '250px',
+                    height: '250px'
                   }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
@@ -1388,12 +1483,20 @@ const App = () => {
               </div>
             )}
 
-            <button
-              onClick={generatePlant}
-              className="generate-btn"
-            >
-              🌱 Сгенерировать растение
-            </button>
+            <div className="button-group">
+              <button
+                onClick={generatePlant}
+                className="generate-btn"
+              >
+                🌱 Сгенерировать растение
+              </button>
+              <button
+                onClick={generateRandomParams}
+                className="generate-btn random-btn"
+              >
+                🎲 Случайные параметры
+              </button>
+            </div>
 
             <div className="download-section">
               <h3 className="download-title">
