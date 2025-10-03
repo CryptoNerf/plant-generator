@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { HexColorPicker } from 'react-colorful';
 
 const App = () => {
   const canvasRef = useRef();
+  const previewCanvasRef = useRef();
   const drawingRef = useRef();
   const previewCtxRef = useRef(null);
   const drawingState = useRef({ isDrawing: false, points: [] });
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
+  const [activeColorPicker, setActiveColorPicker] = useState(null);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [params, setParams] = useState({
     branches: 6,
     length: 80,
@@ -47,9 +51,8 @@ const App = () => {
 
   const [svgElements, setSvgElements] = useState([]);
   const [svgDefs, setSvgDefs] = useState([]);
-  const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [customLeafPoints, setCustomLeafPoints] = useState([]);
-  const DRAWING_CANVAS_SIZE = 250;
+  const DRAWING_CANVAS_SIZE = 240;
 
   // Обработка изменения размера экрана с дебаунсом
   const updateScreenSize = useCallback(() => {
@@ -78,21 +81,100 @@ const App = () => {
     };
   }, [debouncedUpdateScreenSize]);
 
+  // Close color picker when clicking outside
   useEffect(() => {
-    generatePlant();
+    const handleClickOutside = (e) => {
+      if (activeColorPicker && !e.target.closest('.color-picker-popup') && !e.target.closest('.color-circle')) {
+        const isColorPickerDiv = e.target.style && e.target.style.background && e.target.style.cursor === 'pointer';
+        if (!isColorPickerDiv) {
+          setActiveColorPicker(null);
+        }
+      }
+    };
+
+    if (activeColorPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeColorPicker]);
+
+  useEffect(() => {
+    // Дебаунс для генерации - уменьшаем частоту обновлений
+    const debounceTimer = setTimeout(() => {
+      generatePlant();
+      generatePreview();
+    }, 50);
+
+    return () => clearTimeout(debounceTimer);
   }, [plantType, params, screenSize, customLeafPoints]);
+
+  const generatePreview = useCallback(() => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const previewSize = 300;
+
+    canvas.width = previewSize;
+    canvas.height = previewSize;
+
+    ctx.clearRect(0, 0, previewSize, previewSize);
+
+    const centerX = previewSize / 2;
+    let centerY;
+
+    switch (plantType) {
+      case 'tree':
+        centerY = previewSize * 0.85;
+        break;
+      case 'flower':
+        centerY = previewSize * 0.75;
+        break;
+      case 'bush':
+        centerY = previewSize * 0.55;
+        break;
+      default:
+        centerY = previewSize * 0.85;
+    }
+
+    const tempSvgElements = [];
+    const tempSvgDefs = [];
+
+    try {
+      if (plantType === 'tree') {
+        drawTree(ctx, centerX, centerY, params.length * 0.8, -Math.PI/2, params.thickness * 0.8, params.levels, tempSvgElements, tempSvgDefs);
+      } else if (plantType === 'flower') {
+        const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, leafSize: params.leafSize * 0.8, centerSize: params.centerSize * 0.8 };
+        const savedParams = { ...params };
+        Object.assign(params, scaledParams);
+        drawFlower(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        Object.assign(params, savedParams);
+      } else if (plantType === 'bush') {
+        const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, leafSize: params.leafSize * 0.8 };
+        const savedParams = { ...params };
+        Object.assign(params, scaledParams);
+        drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        Object.assign(params, savedParams);
+      }
+    } catch (e) {
+      console.error('Error generating preview:', e);
+    }
+  }, [plantType, params, customLeafPoints]);
 
   const getCanvasSize = useCallback(() => {
     const width = screenSize.width || (typeof window !== 'undefined' ? window.innerWidth : 600);
-    const height = screenSize.height || (typeof window !== 'undefined' ? window.innerHeight : 450);
-    
-    if (width < 320) return { width: 280, height: 210 };
-    else if (width < 480) return { width: Math.min(width - 40, 320), height: 240 };
-    else if (width < 640) return { width: Math.min(width - 60, 400), height: 300 };
-    else if (width < 768) return { width: Math.min(width - 80, 500), height: 375 };
-    else if (width < 1024) return { width: Math.min((width - 150) * 0.6, 450), height: 340 };
-    else if (width < 1200) return { width: Math.min((width - 200) * 0.65, 500), height: 375 };
-    else return { width: Math.min((width - 250) * 0.7, 600), height: 450 };
+
+    // Увеличенный canvas на 20% для предотвращения обрезания
+    let size;
+    if (width < 320) size = 240;
+    else if (width < 480) size = Math.min(width - 40, 336);
+    else if (width < 640) size = Math.min(width - 60, 420);
+    else if (width < 768) size = Math.min(width - 80, 480);
+    else if (width < 1024) size = Math.min((width - 150) * 0.72, 456);
+    else if (width < 1200) size = Math.min((width - 200) * 0.78, 480);
+    else size = Math.min((width - 250) * 0.84, 540);
+
+    return { width: size, height: size };
   }, [screenSize]);
 
   const generatePlant = useCallback(() => {
@@ -104,24 +186,25 @@ const App = () => {
     
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-    canvas.style.width = canvasWidth + 'px';
-    canvas.style.height = canvasHeight + 'px';
-    
+    // Не устанавливаем style - пусть CSS управляет отображением
+
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    
+
     const centerX = canvasWidth / 2;
     let centerY;
 
     switch (plantType) {
       case 'tree':
+        centerY = canvasHeight * 0.85;
+        break;
       case 'flower':
-        centerY = canvasHeight - Math.min(30, canvasHeight * 0.1);
+        centerY = canvasHeight * 0.75;
         break;
       case 'bush':
-        centerY = canvasHeight / 2;
+        centerY = canvasHeight * 0.55;
         break;
       default:
-        centerY = canvasHeight - Math.min(30, canvasHeight * 0.1);
+        centerY = canvasHeight * 0.85;
     }
     
     const tempSvgElements = [];
@@ -144,13 +227,20 @@ const App = () => {
   }, [plantType, params, getCanvasSize, customLeafPoints]);
 
   const createGradient = (ctx, x1, y1, x2, y2, startColor, endColor, id, svgDefs) => {
-    svgDefs.push(
-      `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
-        <stop offset="0%" stop-color="${startColor}" />
-        <stop offset="100%" stop-color="${endColor}" />
-      </linearGradient>`
-    );
-    const svgStyle = `url(#${id})`;
+    // Оптимизация: переиспользуем градиенты с одинаковыми цветами
+    const gradientKey = `grad_${startColor.replace('#', '')}_${endColor.replace('#', '')}`;
+    const existingGradient = svgDefs.find(def => def.includes(`id="${gradientKey}"`));
+
+    if (!existingGradient) {
+      svgDefs.push(
+        `<linearGradient id="${gradientKey}">
+          <stop offset="0%" stop-color="${startColor}" />
+          <stop offset="100%" stop-color="${endColor}" />
+        </linearGradient>`
+      );
+    }
+
+    const svgStyle = `url(#${gradientKey})`;
 
     if (ctx) {
       const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
@@ -164,10 +254,11 @@ const App = () => {
 
   const drawTree = (ctx, x, y, length, angle, thickness, level, svgElements, svgDefs) => {
     if (level <= 0 || length < 3 || thickness < 0.5 || level > 8) return;
-    
+
     const scale = Math.min(screenSize.width || 600, 600) / 600;
-    length = Math.max(3, Math.min(length * scale, 200));
-    thickness = Math.max(0.5, Math.min(thickness * scale, 30));
+    // Масштабируем до 0.95 для баланса между размером и обрезанием
+    length = Math.max(3, Math.min(length * scale * 0.95, 190));
+    thickness = Math.max(0.5, Math.min(thickness * scale * 0.95, 28.5));
     
     const endX = x + Math.cos(angle) * length;
     const endY = y + Math.sin(angle) * length;
@@ -284,16 +375,20 @@ const App = () => {
         ctx.restore();
       }
 
-      // Для SVG
+      // Для SVG - используем общий градиент для всех листьев
       let svgFill = params.leafColor;
       if (params.leafUseGradient) {
-        const gradientId = `leafGrad_${Math.random().toString(36).substr(2, 9)}`;
-        svgDefs.push(
-          `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotDeg} 0.5 0.5)">
-            <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
-            <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
-          </linearGradient>`
-        );
+        const gradientId = `leafGrad_${params.leafGradientStartColor.replace('#', '')}_${params.leafGradientEndColor.replace('#', '')}`;
+        const existingGradient = svgDefs.find(def => def.includes(`id="${gradientId}"`));
+
+        if (!existingGradient) {
+          svgDefs.push(
+            `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5">
+              <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
+              <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
+            </linearGradient>`
+          );
+        }
         svgFill = `url(#${gradientId})`;
       }
 
@@ -364,24 +459,28 @@ const App = () => {
         ctx.restore();
       }
 
-      // Для SVG
+      // Для SVG - используем общий градиент для всех листьев
       let svgFill = params.leafColor;
       if (params.leafUseGradient) {
-        const gradientId = `leafGrad_${Math.random().toString(36).substr(2, 9)}`;
-        svgDefs.push(
-          `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotDeg} 0.5 0.5)">
-            <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
-            <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
-          </linearGradient>`
-        );
+        const gradientId = `leafGrad_${params.leafGradientStartColor.replace('#', '')}_${params.leafGradientEndColor.replace('#', '')}`;
+        const existingGradient = svgDefs.find(def => def.includes(`id="${gradientId}"`));
+
+        if (!existingGradient) {
+          svgDefs.push(
+            `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5">
+              <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
+              <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
+            </linearGradient>`
+          );
+        }
         svgFill = `url(#${gradientId})`;
       }
 
       let d = '';
       if (customLeafPoints.length > 0) {
-        d = `M ${customLeafPoints[0].x} ${customLeafPoints[0].y}`;
+        d = `M ${customLeafPoints[0].x.toFixed(1)} ${customLeafPoints[0].y.toFixed(1)}`;
         for (let i = 1; i < customLeafPoints.length; i++) {
-          d += ` L ${customLeafPoints[i].x} ${customLeafPoints[i].y}`;
+          d += ` L ${customLeafPoints[i].x.toFixed(1)} ${customLeafPoints[i].y.toFixed(1)}`;
         }
         d += ' Z';
       }
@@ -390,12 +489,12 @@ const App = () => {
         type: 'path',
         d,
         fill: svgFill,
-        transform: `translate(${x} ${y}) rotate(${rotDeg}) scale(${leafScale} ${leafScale}) translate(${-shapeCenterX} ${-shapeCenterY})`
+        transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rotDeg.toFixed(1)}) scale(${leafScale.toFixed(3)} ${leafScale.toFixed(3)}) translate(${(-shapeCenterX).toFixed(1)} ${(-shapeCenterY).toFixed(1)})`
       };
 
       if (useStroke) {
         svgLeaf.stroke = strokeStyle;
-        svgLeaf['stroke-width'] = strokeWidth;
+        svgLeaf['stroke-width'] = strokeWidth.toFixed(2);
         svgLeaf['vector-effect'] = 'non-scaling-stroke';
       }
 
@@ -405,11 +504,12 @@ const App = () => {
 
   const drawFlower = (ctx, centerX, centerY, svgElements, svgDefs) => {
     if (!isFinite(centerX) || !isFinite(centerY)) return;
-    
+
     const scale = Math.min(screenSize.width || 600, 600) / 600;
-    const stemLength = Math.max(30, Math.min(params.length * scale, 250));
+    // Масштабируем до 0.95 для баланса
+    const stemLength = Math.max(30, Math.min(params.length * scale * 0.95, 237.5));
     const stemEndY = centerY - stemLength;
-    const stemThickness = Math.max(2, Math.min(params.thickness * scale, 15));
+    const stemThickness = Math.max(2, Math.min(params.thickness * scale * 0.95, 14.25));
     
     let stemFillStyle = params.color;
     let svgStemStroke = params.color;
@@ -462,7 +562,7 @@ const App = () => {
     svgElements.push(svgStem);
     
     const petals = Math.max(3, Math.min(params.branches, 15));
-    const petalOffset = params.leafSize * 1.5 * scale;
+    const petalOffset = params.leafSize * 1.5 * scale * 0.95;
     
     for (let i = 0; i < petals; i++) {
       const angle = (i * Math.PI * 2) / petals;
@@ -472,7 +572,7 @@ const App = () => {
       drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale, angle + Math.PI/2);
     }
     
-    const centerRadius = Math.max(3, Math.min(params.centerSize * scale, 25));
+    const centerRadius = Math.max(3, Math.min(params.centerSize * scale * 0.95, 23.75));
     let centerFillStyle = params.centerColor;
     let svgCenterFill = params.centerColor;
     let centerStrokeStyle = params.centerStrokeColor;
@@ -515,14 +615,15 @@ const App = () => {
 
   const drawBush = (ctx, centerX, centerY, svgElements, svgDefs) => {
     if (!isFinite(centerX) || !isFinite(centerY)) return;
-    
+
     const branches = Math.max(4, Math.min(params.branches * 2, 16));
     const scale = Math.min(screenSize.width || 600, 600) / 600;
-    
+
     for (let i = 0; i < branches; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const length = Math.max(25, params.length * (0.5 + Math.random() * 0.4) * scale);
-      const thickness = Math.max(1, params.thickness * 0.6 * scale);
+      // Масштабируем до 0.95 для баланса
+      const length = Math.max(25, params.length * (0.5 + Math.random() * 0.4) * scale * 0.95);
+      const thickness = Math.max(1, params.thickness * 0.6 * scale * 0.95);
       
       drawTree(ctx, centerX, centerY, length, angle - Math.PI/2, thickness, 
         Math.max(1, Math.min(params.levels, 4)), svgElements, svgDefs);
@@ -550,6 +651,11 @@ const App = () => {
 
     let newParams = { ...params };
 
+    // Генерируем цвета заранее для консистентности
+    const trunkColor = getRandomColor();
+    const leafColor1 = getRandomColor();
+    const leafColor2 = getRandomColor();
+
     switch (plantType) {
       case 'tree':
         newParams = {
@@ -561,8 +667,8 @@ const App = () => {
           levels: randomBetween(2, 6),
           leafSize: randomBetween(6, 20),
           leafDensity: randomBetween(0, 10, 1) / 10,
-          color: getRandomColor(),
-          leafColor: getRandomColor()
+          color: trunkColor,
+          leafColor: leafColor1
         };
         break;
       case 'bush':
@@ -575,8 +681,8 @@ const App = () => {
           levels: randomBetween(1, 4),
           leafSize: randomBetween(5, 15),
           leafDensity: randomBetween(0, 10, 1) / 10,
-          color: getRandomColor(),
-          leafColor: getRandomColor()
+          color: trunkColor,
+          leafColor: leafColor1
         };
         break;
       case 'flower':
@@ -587,29 +693,29 @@ const App = () => {
           thickness: randomBetween(2, 10),
           leafSize: randomBetween(6, 20),
           centerSize: randomBetween(5, 20),
-          color: getRandomColor(),
-          leafColor: getRandomColor(),
+          color: trunkColor,
+          leafColor: leafColor1,
           centerColor: getRandomColor()
         };
         break;
     }
 
-    // Случайные градиенты и обводки
-    const useGradient = Math.random() < 0.3; // 30% шанс
-    const useStroke = Math.random() < 0.2; // 20% шанс
+    // Случайные градиенты и обводки - используем те же цвета
+    const useGradient = Math.random() < 0.3;
+    const useStroke = Math.random() < 0.2;
     const leafUseGradient = Math.random() < 0.3;
     const leafUseStroke = Math.random() < 0.2;
 
     newParams.UseGradient = useGradient;
-    newParams.GradientStartColor = getRandomColor();
+    newParams.GradientStartColor = trunkColor;
     newParams.GradientEndColor = getRandomColor();
     newParams.UseStroke = useStroke;
     newParams.StrokeColor = getRandomColor();
     newParams.StrokeWidth = randomBetween(1, 10, 1) / 2;
 
     newParams.leafUseGradient = leafUseGradient;
-    newParams.leafGradientStartColor = getRandomColor();
-    newParams.leafGradientEndColor = getRandomColor();
+    newParams.leafGradientStartColor = leafColor1;
+    newParams.leafGradientEndColor = leafColor2;
     newParams.leafUseStroke = leafUseStroke;
     newParams.leafStrokeColor = getRandomColor();
     newParams.leafStrokeWidth = randomBetween(1, 10, 1) / 2;
@@ -725,12 +831,12 @@ const App = () => {
   };
 
   useEffect(() => {
-    if (isDrawingMode && drawingRef.current) {
+    if (drawingRef.current) {
       const canvas = drawingRef.current;
       canvas.width = DRAWING_CANVAS_SIZE;
       canvas.height = DRAWING_CANVAS_SIZE;
-      canvas.style.width = '250px';
-      canvas.style.height = '250px';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
       previewCtxRef.current = canvas.getContext('2d');
       previewCtxRef.current.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
       if (customLeafPoints.length > 0) {
@@ -746,47 +852,52 @@ const App = () => {
         ctx.stroke();
       }
     }
-  }, [isDrawingMode, customLeafPoints]);
+  }, [customLeafPoints]);
 
   const downloadPNG = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      
+
+      // Используем точные размеры отображаемого canvas
+      const displayWidth = canvas.width;
+      const displayHeight = canvas.height;
+
       // Создаём временный canvas с высоким разрешением
-      const scaleFactor = 4; // Увеличиваем разрешение в 4 раза для высокого качества
+      const scaleFactor = 4;
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
-      
+
       // Устанавливаем размер с учётом масштаба
-      const { width: originalWidth, height: originalHeight } = getCanvasSize();
-      tempCanvas.width = originalWidth * scaleFactor;
-      tempCanvas.height = originalHeight * scaleFactor;
-      
+      tempCanvas.width = displayWidth * scaleFactor;
+      tempCanvas.height = displayHeight * scaleFactor;
+
       // Масштабируем контекст
       tempCtx.scale(scaleFactor, scaleFactor);
-      
+
       // Очищаем canvas
       tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-      
-      // Перерисовываем растение в высоком разрешении
-      const centerX = originalWidth / 2;
+
+      // Перерисовываем растение с теми же координатами
+      const centerX = displayWidth / 2;
       let centerY;
 
       switch (plantType) {
         case 'tree':
+          centerY = displayHeight * 0.85;
+          break;
         case 'flower':
-          centerY = originalHeight - Math.min(30, originalHeight * 0.1);
+          centerY = displayHeight * 0.75;
           break;
         case 'bush':
-          centerY = originalHeight / 2;
+          centerY = displayHeight * 0.55;
           break;
         default:
-          centerY = originalHeight - Math.min(30, originalHeight * 0.1);
+          centerY = displayHeight * 0.85;
       }
-      
+
       const tempSvgElements = [];
       const tempSvgDefs = [];
-      
+
       try {
         if (plantType === 'tree') {
           drawTree(tempCtx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
@@ -1423,123 +1534,189 @@ const App = () => {
 
   return (
     <div className="plant-generator">
-      <div className="container">
-        <h1 className="main-title">
-          Generate your garden
-        </h1>
-        
-        <div className="content-layout">
-          <div className="parameters-panel">
-            <h2 className="panel-title">Параметры</h2>
-            
-            <div className="select-group">
-              <label className="select-label">
-                Тип растения
-              </label>
-              <select 
-                value={plantType}
-                onChange={(e) => setPlantType(e.target.value)}
-                className="select-input"
-              >
-                <option value="tree">🌳 Дерево</option>
-                <option value="flower">🌸 Цветок</option>
-                <option value="bush">🌿 Куст</option>
-              </select>
-            </div>
+      <div className="main-container">
+        {/* Левая панель с пресетами */}
+        <aside className="presets-sidebar">
+          <div
+            className={`preset-item ${plantType === 'tree' ? 'active' : ''}`}
+            onClick={() => setPlantType('tree')}
+          >
+            <img src="src/assets/preset-tree.png" alt="Tree" />
+          </div>
+          <div
+            className={`preset-item ${plantType === 'flower' ? 'active' : ''}`}
+            onClick={() => setPlantType('flower')}
+          >
+            <img src="src/assets/preset-flower.png" alt="Flower" />
+          </div>
+          <div
+            className={`preset-item ${plantType === 'bush' ? 'active' : ''}`}
+            onClick={() => setPlantType('bush')}
+          >
+            <img src="src/assets/preset-bush.png" alt="Bush" />
+          </div>
+        </aside>
 
-            <div className="controls-section">
-              {renderSliders()}
-            </div>
+        {/* Центральная область с растением */}
+        <main className="plant-display-area">
+          <div className="plant-canvas-wrapper">
+            <div className="generator-wrapper">
+              {/* Фоновый SVG */}
+              <img src="src/assets/GardenGenerator.svg" alt="Generator" className="generator-bg-image" />
 
-            {isDrawingMode && (
-              <div className="drawing-container">
-                <h4>Нарисуйте форму листа/лепестка (начните рисовать мышью, отпустите для закрытия)</h4>
-                <canvas
-                  ref={drawingRef}
-                  width={DRAWING_CANVAS_SIZE}
-                  height={DRAWING_CANVAS_SIZE}
-                  style={{ 
-                    border: '1px solid #ccc', 
-                    cursor: 'crosshair', 
-                    display: 'block', 
-                    margin: '10px auto',
-                    touchAction: 'none',
-                    width: '250px',
-                    height: '250px'
+              {/* Цветные кружки */}
+              <div className="color-picker-circles">
+                <div
+                  className="color-circle"
+                  style={{
+                    left: '41.2%',
+                    top: '6.05%',
+                    width: '5.2%',
+                    background: params.leafGradientStartColor
                   }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseLeave}
-                  onTouchStart={handleDrawStart}
-                  onTouchMove={handleDrawMove}
-                  onTouchEnd={handleDrawEnd}
-                  onTouchCancel={handleDrawEnd}
-                />
-                <div style={{ textAlign: 'center' }}>
-                  <button onClick={clearDrawing} style={{ marginRight: '10px' }}>Очистить</button>
-                  <button onClick={acceptDrawing}>Принять и закрыть</button>
+                  onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
+                >
+                  {activeColorPicker === 'leafGradientStartColor' && (
+                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
+                      <HexColorPicker
+                        color={params.leafGradientStartColor}
+                        onChange={(color) => {
+                          handleParamChange('leafGradientStartColor', color);
+                          handleParamChange('leafUseGradient', true);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="color-circle"
+                  style={{
+                    left: '60%',
+                    top: '13.2%',
+                    width: '14.5%',
+                    background: params.leafGradientEndColor
+                  }}
+                  onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientEndColor' ? null : 'leafGradientEndColor')}
+                >
+                  {activeColorPicker === 'leafGradientEndColor' && (
+                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
+                      <HexColorPicker
+                        color={params.leafGradientEndColor}
+                        onChange={(color) => {
+                          handleParamChange('leafGradientEndColor', color);
+                          handleParamChange('leafUseGradient', true);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="color-circle"
+                  style={{
+                    left: '80.59%',
+                    top: '86.89%',
+                    width: '11.1%',
+                    background: params.GradientEndColor
+                  }}
+                  onClick={() => setActiveColorPicker(activeColorPicker === 'GradientEndColor' ? null : 'GradientEndColor')}
+                >
+                  {activeColorPicker === 'GradientEndColor' && (
+                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
+                      <HexColorPicker
+                        color={params.GradientEndColor}
+                        onChange={(color) => {
+                          handleParamChange('GradientEndColor', color);
+                          handleParamChange('UseGradient', true);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="color-circle"
+                  style={{
+                    left: '92.86%',
+                    top: '95%',
+                    width: '4%',
+                    background: params.GradientStartColor
+                  }}
+                  onClick={() => setActiveColorPicker(activeColorPicker === 'GradientStartColor' ? null : 'GradientStartColor')}
+                >
+                  {activeColorPicker === 'GradientStartColor' && (
+                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
+                      <HexColorPicker
+                        color={params.GradientStartColor}
+                        onChange={(color) => {
+                          handleParamChange('GradientStartColor', color);
+                          handleParamChange('UseGradient', true);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
 
-            <div className="button-group">
-              <button
-                onClick={generatePlant}
-                className="generate-btn"
-              >
-                🌱 Сгенерировать растение
-              </button>
-              <button
-                onClick={generateRandomParams}
-                className="generate-btn random-btn"
-              >
-                🎲 Случайные параметры
-              </button>
+              {/* Canvas для растения */}
+              <canvas ref={canvasRef} className="canvas-display" />
             </div>
+          </div>
+        </main>
 
-            <div className="download-section">
-              <h3 className="download-title">
-                Скачать
-              </h3>
-              <div className="download-buttons">
-                <button
-                  onClick={downloadPNG}
-                  className="download-btn download-btn-png"
-                >
-                  PNG
-                </button>
-                <button
-                  onClick={downloadSVG}
-                  className="download-btn download-btn-svg"
-                >
-                  SVG
-                </button>
+        {/* Правая панель с параметрами */}
+        <aside className="parameters-sidebar">
+          <h2 className="parameters-title">Параметры</h2>
+
+          {/* Слайдеры */}
+          <div className="controls-section">
+            {renderSliders()}
+          </div>
+
+          {/* Кнопки управления */}
+          <div className="action-buttons">
+            <button onClick={generateRandomParams} className="btn-random">
+              random
+            </button>
+            <button onClick={generatePlant} className="btn-generate">
+              сгенерировать
+            </button>
+          </div>
+
+          {/* Drawing mode */}
+          {isDrawingMode && (
+            <div className="drawing-container">
+              <canvas
+                ref={drawingRef}
+                width={DRAWING_CANVAS_SIZE}
+                height={DRAWING_CANVAS_SIZE}
+                className="drawing-canvas"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={handleDrawStart}
+                onTouchMove={handleDrawMove}
+                onTouchEnd={handleDrawEnd}
+                onTouchCancel={handleDrawEnd}
+              />
+              <div className="drawing-actions">
+                <button onClick={clearDrawing} className="btn-drawing">применить</button>
+                <button onClick={acceptDrawing} className="btn-drawing">стереть</button>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="plant-panel">
-            <h2 className="panel-title">Твое растение</h2>
-            <div className="canvas-container">
-              <canvas
-                ref={canvasRef}
-                className="canvas-display"
-              />
+          {/* Кнопки скачивания */}
+          <div className="download-section">
+            <p className="download-label">Сохранить как:</p>
+            <div className="download-buttons">
+              <button onClick={downloadPNG} className="btn-download">PNG</button>
+              <button onClick={downloadSVG} className="btn-download">SVG</button>
             </div>
           </div>
-        </div>
-        
-        <footer className="footer">
-          Copyright 2025{' '}
-          <a
-            href="https://cryptonerf.github.io/portfolio/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Emile Alexanyan
-          </a>
-        </footer>
+        </aside>
       </div>
     </div>
   );
