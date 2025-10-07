@@ -10,7 +10,6 @@ const App = () => {
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
-  const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [params, setParams] = useState({
     branches: 6,
     length: 80,
@@ -99,13 +98,8 @@ const App = () => {
   }, [activeColorPicker]);
 
   useEffect(() => {
-    // Дебаунс для генерации - уменьшаем частоту обновлений
-    const debounceTimer = setTimeout(() => {
-      generatePlant();
-      generatePreview();
-    }, 50);
-
-    return () => clearTimeout(debounceTimer);
+    generatePlant();
+    generatePreview();
   }, [plantType, params, screenSize, customLeafPoints]);
 
   const generatePreview = useCallback(() => {
@@ -826,10 +820,6 @@ const App = () => {
     }
   };
 
-  const acceptDrawing = () => {
-    setIsDrawingMode(false);
-  };
-
   useEffect(() => {
     if (drawingRef.current) {
       const canvas = drawingRef.current;
@@ -979,82 +969,6 @@ const App = () => {
   </svg>`;
   };
 
-  const renderGradientControls = (prefix, label, color1, color2, useGradient, strokeColor, strokeWidth, useStroke) => (
-    <>
-      <div className="checkbox-group">
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={useGradient}
-            onChange={(e) => handleParamChange(`${prefix}UseGradient`, e.target.checked)}
-            className="checkbox-input"
-          />
-          {label} градиент
-        </label>
-      </div>
-      {useGradient && (
-        <div className="color-controls">
-          <div className="color-input-group">
-            <label className="color-label">Начало</label>
-            <input
-              type="color"
-              value={color1}
-              onChange={(e) => handleParamChange(`${prefix}GradientStartColor`, e.target.value)}
-              className="color-input"
-            />
-          </div>
-          <div className="color-input-group">
-            <label className="color-label">Конец</label>
-            <input
-              type="color"
-              value={color2}
-              onChange={(e) => handleParamChange(`${prefix}GradientEndColor`, e.target.value)}
-              className="color-input"
-            />
-          </div>
-        </div>
-      )}
-      <div className="checkbox-group">
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={useStroke}
-            onChange={(e) => handleParamChange(`${prefix}UseStroke`, e.target.checked)}
-            className="checkbox-input"
-          />
-          {label} обводка
-        </label>
-      </div>
-      {useStroke && (
-        <>
-          <div className="color-input-group">
-            <label className="color-label">Цвет обводки</label>
-            <input
-              type="color"
-              value={strokeColor}
-              onChange={(e) => handleParamChange(`${prefix}StrokeColor`, e.target.value)}
-              className="color-input"
-            />
-          </div>
-          <div className="slider-group">
-            <label className="slider-label">
-              Толщина обводки: {strokeWidth}
-            </label>
-            <input
-              type="range"
-              min="0.5"
-              max="5"
-              step="0.5"
-              value={strokeWidth}
-              onChange={(e) => handleParamChange(`${prefix}StrokeWidth`, parseFloat(e.target.value))}
-              className="slider"
-            />
-          </div>
-        </>
-      )}
-    </>
-  );
-
   const renderSliders = () => {
     switch (plantType) {
       case 'tree':
@@ -1151,67 +1065,6 @@ const App = () => {
                 onChange={(e) => handleParamChange('leafDensity', parseFloat(e.target.value))}
                 className="slider"
               />
-            </div>
-            <div className="color-controls">
-              <div className="color-input-group">
-                <label className="color-label">
-                  Цвет ствола
-                </label>
-                <input
-                  type="color"
-                  value={params.color}
-                  onChange={(e) => handleParamChange('color', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-              <div className="color-input-group">
-                <label className="color-label">
-                  Цвет листьев
-                </label>
-                <input
-                  type="color"
-                  value={params.leafColor}
-                  onChange={(e) => handleParamChange('leafColor', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-            </div>
-
-            {/* Градиент и обводка */}
-            <div className="advanced-section">
-              <h3 className="advanced-title">🎨 Дополнительно для ствола</h3>
-              {renderGradientControls(
-                '',
-                'Ствол',
-                params.GradientStartColor,
-                params.GradientEndColor,
-                params.UseGradient,
-                params.StrokeColor,
-                params.StrokeWidth,
-                params.UseStroke
-              )}
-            </div>
-
-            <div className="advanced-section">
-              <h3 className="advanced-title">🍃 Дополнительно для листьев</h3>
-              {renderGradientControls(
-                'leaf',
-                'Листья',
-                params.leafGradientStartColor,
-                params.leafGradientEndColor,
-                params.leafUseGradient,
-                params.leafStrokeColor,
-                params.leafStrokeWidth,
-                params.leafUseStroke
-              )}
-              <div className="custom-leaf-section">
-                <button 
-                  onClick={() => setIsDrawingMode(true)} 
-                  className="custom-btn"
-                >
-                  🎨 Нарисовать форму листа
-                </button>
-              </div>
             </div>
           </>
         );
@@ -1310,66 +1163,6 @@ const App = () => {
                 className="slider"
               />
             </div>
-            <div className="color-controls">
-              <div className="color-input-group">
-                <label className="color-label">
-                  Цвет веток
-                </label>
-                <input
-                  type="color"
-                  value={params.color}
-                  onChange={(e) => handleParamChange('color', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-              <div className="color-input-group">
-                <label className="color-label">
-                  Цвет листьев
-                </label>
-                <input
-                  type="color"
-                  value={params.leafColor}
-                  onChange={(e) => handleParamChange('leafColor', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-            </div>
-
-            <div className="advanced-section">
-              <h3 className="advanced-title">🎨 Дополнительно для веток</h3>
-              {renderGradientControls(
-                '',
-                'Ветки',
-                params.GradientStartColor,
-                params.GradientEndColor,
-                params.UseGradient,
-                params.StrokeColor,
-                params.StrokeWidth,
-                params.UseStroke
-              )}
-            </div>
-
-            <div className="advanced-section">
-              <h3 className="advanced-title">🍃 Дополнительно для листьев</h3>
-              {renderGradientControls(
-                'leaf',
-                'Листья',
-                params.leafGradientStartColor,
-                params.leafGradientEndColor,
-                params.leafUseGradient,
-                params.leafStrokeColor,
-                params.leafStrokeWidth,
-                params.leafUseStroke
-              )}
-              <div className="custom-leaf-section">
-                <button 
-                  onClick={() => setIsDrawingMode(true)} 
-                  className="custom-btn"
-                >
-                  🎨 Нарисовать форму листа
-                </button>
-              </div>
-            </div>
           </>
         );
       case 'flower':
@@ -1439,91 +1232,6 @@ const App = () => {
                 onChange={(e) => handleParamChange('centerSize', parseInt(e.target.value))}
                 className="slider"
               />
-            </div>
-            <div className="color-controls">
-              <div className="color-input-group">
-                <label className="color-label">
-                  Цвет стебля
-                </label>
-                <input
-                  type="color"
-                  value={params.color}
-                  onChange={(e) => handleParamChange('color', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-              <div className="color-input-group">
-                <label className="color-label">
-                  Цвет лепестков
-                </label>
-                <input
-                  type="color"
-                  value={params.leafColor}
-                  onChange={(e) => handleParamChange('leafColor', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-              <div className="color-input-group full-width">
-                <label className="color-label">
-                  Цвет центра
-                </label>
-                <input
-                  type="color"
-                  value={params.centerColor}
-                  onChange={(e) => handleParamChange('centerColor', e.target.value)}
-                  className="color-input"
-                />
-              </div>
-            </div>
-
-            <div className="advanced-section">
-              <h3 className="advanced-title">🌿 Дополнительно для стебля</h3>
-              {renderGradientControls(
-                '',
-                'Стебель',
-                params.GradientStartColor,
-                params.GradientEndColor,
-                params.UseGradient,
-                params.StrokeColor,
-                params.StrokeWidth,
-                params.UseStroke
-              )}
-            </div>
-
-            <div className="advanced-section">
-              <h3 className="advanced-title">🌸 Дополнительно для лепестков</h3>
-              {renderGradientControls(
-                'leaf',
-                'Лепестки',
-                params.leafGradientStartColor,
-                params.leafGradientEndColor,
-                params.leafUseGradient,
-                params.leafStrokeColor,
-                params.leafStrokeWidth,
-                params.leafUseStroke
-              )}
-              <div className="custom-leaf-section">
-                <button 
-                  onClick={() => setIsDrawingMode(true)} 
-                  className="custom-btn"
-                >
-                  🎨 Нарисовать форму лепестка
-                </button>
-              </div>
-            </div>
-
-            <div className="advanced-section">
-              <h3 className="advanced-title">🌼 Дополнительно для центра</h3>
-              {renderGradientControls(
-                'center',
-                'Центр',
-                params.centerGradientStartColor,
-                params.centerGradientEndColor,
-                params.centerUseGradient,
-                params.centerStrokeColor,
-                params.centerStrokeWidth,
-                params.centerUseStroke
-              )}
             </div>
           </>
         );
@@ -1674,6 +1382,85 @@ const App = () => {
             {renderSliders()}
           </div>
 
+          {/* Чекбоксы обводки */}
+          <div className="outline-checkboxes">
+            <div className="checkbox-item">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={params.UseStroke}
+                  onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
+                  className="checkbox-input"
+                />
+                Обводка ствола
+              </label>
+              {params.UseStroke && (
+                <>
+                  <div className="color-picker-panel">
+                    <input
+                      type="color"
+                      value={params.StrokeColor}
+                      onChange={(e) => handleParamChange('StrokeColor', e.target.value)}
+                      className="color-input-small"
+                    />
+                  </div>
+                  <div className="stroke-width-slider">
+                    <label className="slider-label-small">
+                      Толщина: {params.StrokeWidth}
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="5"
+                      step="0.5"
+                      value={params.StrokeWidth}
+                      onChange={(e) => handleParamChange('StrokeWidth', parseFloat(e.target.value))}
+                      className="slider-small"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="checkbox-item">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={params.leafUseStroke}
+                  onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
+                  className="checkbox-input"
+                />
+                Обводка листвы
+              </label>
+              {params.leafUseStroke && (
+                <>
+                  <div className="color-picker-panel">
+                    <input
+                      type="color"
+                      value={params.leafStrokeColor}
+                      onChange={(e) => handleParamChange('leafStrokeColor', e.target.value)}
+                      className="color-input-small"
+                    />
+                  </div>
+                  <div className="stroke-width-slider">
+                    <label className="slider-label-small">
+                      Толщина: {params.leafStrokeWidth}
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="5"
+                      step="0.5"
+                      value={params.leafStrokeWidth}
+                      onChange={(e) => handleParamChange('leafStrokeWidth', parseFloat(e.target.value))}
+                      className="slider-small"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Кнопки управления */}
           <div className="action-buttons">
             <button onClick={generateRandomParams} className="btn-random">
@@ -1684,29 +1471,33 @@ const App = () => {
             </button>
           </div>
 
-          {/* Drawing mode */}
-          {isDrawingMode && (
-            <div className="drawing-container">
-              <canvas
-                ref={drawingRef}
-                width={DRAWING_CANVAS_SIZE}
-                height={DRAWING_CANVAS_SIZE}
-                className="drawing-canvas"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseLeave}
-                onTouchStart={handleDrawStart}
-                onTouchMove={handleDrawMove}
-                onTouchEnd={handleDrawEnd}
-                onTouchCancel={handleDrawEnd}
-              />
-              <div className="drawing-actions">
-                <button onClick={clearDrawing} className="btn-drawing">применить</button>
-                <button onClick={acceptDrawing} className="btn-drawing">стереть</button>
-              </div>
-            </div>
-          )}
+          {/* Drawing canvas - всегда видимый */}
+          <div className="drawing-canvas-wrapper">
+            <img
+              src="src/assets/list.svg"
+              alt="Draw leaf"
+              className={`drawing-placeholder ${customLeafPoints.length > 0 ? 'hidden' : ''}`}
+            />
+            <canvas
+              ref={drawingRef}
+              width={DRAWING_CANVAS_SIZE}
+              height={DRAWING_CANVAS_SIZE}
+              className="drawing-canvas"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handleDrawStart}
+              onTouchMove={handleDrawMove}
+              onTouchEnd={handleDrawEnd}
+              onTouchCancel={handleDrawEnd}
+            />
+          </div>
+
+          {/* Кнопка управления drawing */}
+          <div className="drawing-actions">
+            <button onClick={clearDrawing} className="btn-drawing btn-drawing-full">стереть</button>
+          </div>
 
           {/* Кнопки скачивания */}
           <div className="download-section">
