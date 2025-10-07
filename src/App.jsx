@@ -1277,9 +1277,9 @@ const App = () => {
                 <div
                   className="color-circle"
                   style={{
-                    left: '41.2%',
-                    top: '6.05%',
-                    width: '5.2%',
+                    left: '41.7%',
+                    top: '4.18%',
+                    width: '3.65%',
                     background: params.leafGradientStartColor
                   }}
                   onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
@@ -1300,9 +1300,9 @@ const App = () => {
                 <div
                   className="color-circle"
                   style={{
-                    left: '60%',
-                    top: '13.2%',
-                    width: '14.5%',
+                    left: '52.1%',
+                    top: '8%',
+                    width: '10.4%',
                     background: params.leafGradientEndColor
                   }}
                   onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientEndColor' ? null : 'leafGradientEndColor')}
@@ -1323,9 +1323,9 @@ const App = () => {
                 <div
                   className="color-circle"
                   style={{
-                    left: '80.59%',
-                    top: '86.89%',
-                    width: '11.1%',
+                    left: '68.45%',
+                    top: '82.9%',
+                    width: '8.1%',
                     background: params.GradientEndColor
                   }}
                   onClick={() => setActiveColorPicker(activeColorPicker === 'GradientEndColor' ? null : 'GradientEndColor')}
@@ -1346,9 +1346,9 @@ const App = () => {
                 <div
                   className="color-circle"
                   style={{
-                    left: '92.86%',
-                    top: '95%',
-                    width: '4%',
+                    left: '80.14%',
+                    top: '93.5%',
+                    width: '2.8%',
                     background: params.GradientStartColor
                   }}
                   onClick={() => setActiveColorPicker(activeColorPicker === 'GradientStartColor' ? null : 'GradientStartColor')}
