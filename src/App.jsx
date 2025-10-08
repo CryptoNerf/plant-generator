@@ -1271,13 +1271,14 @@ const App = () => {
         <main className="plant-display-area">
           <div className="plant-canvas-wrapper">
             <div className="generator-wrapper">
-              {/* Фоновый SVG */}
-              <img src="src/assets/GardenGenerator.svg" alt="Generator" className="generator-bg-image" />
+              {/* Фоновый SVG - разный для десктопа и мобильных */}
+              <img src="src/assets/GardenGenerator.svg" alt="Generator" className="generator-bg-image desktop-generator" />
+              <img src="src/assets/PhoneGenerator.svg" alt="Generator" className="generator-bg-image mobile-generator" />
 
               {/* Цветные кружки */}
               <div className="color-picker-circles">
                 <div
-                  className="color-circle-wrapper"
+                  className="color-circle-wrapper color-circle-1"
                   style={{
                     position: 'absolute',
                     left: '41.7%',
@@ -1294,7 +1295,7 @@ const App = () => {
                 </div>
 
                 <div
-                  className="color-circle-wrapper"
+                  className="color-circle-wrapper color-circle-2"
                   style={{
                     position: 'absolute',
                     left: '52.1%',
@@ -1311,7 +1312,7 @@ const App = () => {
                 </div>
 
                 <div
-                  className="color-circle-wrapper"
+                  className="color-circle-wrapper color-circle-3"
                   style={{
                     position: 'absolute',
                     left: '68.45%',
@@ -1328,7 +1329,7 @@ const App = () => {
                 </div>
 
                 <div
-                  className="color-circle-wrapper"
+                  className="color-circle-wrapper color-circle-4"
                   style={{
                     position: 'absolute',
                     left: '80.14%',
@@ -1351,6 +1352,28 @@ const App = () => {
                 <div className="liquidGlass-tint"></div>
                 <div className="liquidGlass-shine"></div>
                 <canvas ref={canvasRef} className="canvas-display" />
+              </div>
+            </div>
+
+            {/* Мобильные кнопки пресетов (видны только на мобильных) */}
+            <div className="mobile-presets">
+              <div
+                className={`mobile-preset-item ${plantType === 'tree' ? 'active' : ''}`}
+                onClick={() => setPlantType('tree')}
+              >
+                <img src="src/assets/preset-tree.png" alt="Tree" />
+              </div>
+              <div
+                className={`mobile-preset-item ${plantType === 'flower' ? 'active' : ''}`}
+                onClick={() => setPlantType('flower')}
+              >
+                <img src="src/assets/preset-flower.png" alt="Flower" />
+              </div>
+              <div
+                className={`mobile-preset-item ${plantType === 'bush' ? 'active' : ''}`}
+                onClick={() => setPlantType('bush')}
+              >
+                <img src="src/assets/preset-bush.png" alt="Bush" />
               </div>
             </div>
           </div>

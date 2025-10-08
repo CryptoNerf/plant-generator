@@ -155,6 +155,15 @@ body {
   object-fit: contain;
 }
 
+/* Показываем десктоп картинку по умолчанию */
+.desktop-generator {
+  display: block;
+}
+
+.mobile-generator {
+  display: none;
+}
+
 .canvas-display {
   position: absolute;
   top: 0;
@@ -190,6 +199,11 @@ body {
 
 .color-circle:hover {
   transform: scale(1.15);
+}
+
+/* Мобильные пресеты - скрыты по умолчанию на десктопе */
+.mobile-presets {
+  display: none;
 }
 
 /* PhotoshopPicker встроенный в панель */
@@ -645,27 +659,185 @@ body {
 
 @media (max-width: 1024px) {
   .main-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    display: flex;
+    flex-direction: column;
     height: auto;
+    min-height: 100vh;
   }
 
+  /* Скрываем левую панель пресетов на мобильных */
   .presets-sidebar {
-    flex-direction: row;
-    padding: 15px;
+    display: none;
   }
 
-  .preset-item {
-    width: 120px;
-    height: 120px;
-  }
-
+  /* Центральная область */
   .plant-display-area {
-    padding: 20px;
+    padding: 20px 20px 10px 20px;
+    order: 1;
   }
 
+  .plant-canvas-wrapper {
+    max-width: 100%;
+  }
+
+  /* Меняем картинку генератора на мобильную */
+  .desktop-generator {
+    display: none;
+  }
+
+  .mobile-generator {
+    display: block;
+  }
+
+  /* Меняем позиции цветных кружков для мобильной версии */
+  .color-circle-1 {
+    left: 27.9% !important;
+    top: 84.6% !important;
+    width: 6.9% !important;
+  }
+
+  .color-circle-2 {
+    left: 8.9% !important;
+    top: 67.9% !important;
+    width: 14% !important;
+  }
+
+  .color-circle-3 {
+    left: 77.3% !important;
+    top: 67.9% !important;
+    width: 14% !important;
+  }
+
+  .color-circle-4 {
+    left: 65.5% !important;
+    top: 84.6% !important;
+    width: 6.9% !important;
+  }
+
+  /* Меняем позицию и размер круга с растением для мобильной версии */
+  .canvas-glass-wrapper {
+    top: 41.5%;
+    left: 49.6%;
+    width: 66%;
+    height: 66%;
+  }
+
+  /* Правая панель становится нижней */
   .parameters-sidebar {
-    max-height: none;
+    order: 2;
+    border-left: none;
+    border-top: 1px solid #000;
+    border-radius: 56px 56px 0 0;
+    min-height: 0;
+    height: auto;
+    padding: 20px 15px 30px 15px;
+    margin-top: -20px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .parameters-title {
+    font-size: 20px;
+  }
+
+  /* Показываем мобильные пресеты */
+  .mobile-presets {
+    display: flex !important;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    padding: 0 20px;
+  }
+
+  .mobile-preset-item {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: #3E462F;
+    border: 1px solid #000;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .mobile-preset-item:hover,
+  .mobile-preset-item.active {
+    transform: scale(1.05);
+    border-color: #6EB854;
+    border-width: 2px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .mobile-preset-item img {
+    width: 70%;
+    height: 70%;
+    object-fit: contain;
+  }
+
+  /* Чекбоксы в одну строку на мобильных */
+  .outline-checkboxes {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Увеличиваем отступы между слайдерами для удобства на мобильных */
+  .slider-group {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .controls-section {
+    gap: 18px;
+  }
+
+  /* Увеличиваем размер слайдеров для удобства пальцем */
+  .slider {
+    height: 8px;
+  }
+
+  .slider::-webkit-slider-thumb {
+    width: 18px;
+    height: 28px;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 18px;
+    height: 28px;
+  }
+
+  /* Увеличиваем область рисования для телефона */
+  .drawing-canvas-wrapper {
+    height: 250px;
+    min-height: 250px;
+  }
+
+  /* Увеличиваем размер шрифтов для удобства чтения на мобильных */
+  .slider-label {
+    font-size: 16px;
+  }
+
+  .checkbox-label {
+    font-size: 16px;
+  }
+
+  .slider-label-small {
+    font-size: 14px;
+  }
+
+  .download-label {
+    font-size: 16px;
+  }
+
+  .btn-random,
+  .btn-generate,
+  .btn-download,
+  .btn-drawing {
+    font-size: 16px;
   }
 }
 
