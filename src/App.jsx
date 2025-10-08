@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { HexColorPicker } from 'react-colorful';
+import { PhotoshopPicker } from 'react-color';
 
 const App = () => {
   const canvasRef = useRef();
@@ -83,7 +83,10 @@ const App = () => {
   // Close color picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (activeColorPicker && !e.target.closest('.color-picker-popup') && !e.target.closest('.color-circle')) {
+      if (activeColorPicker &&
+          !e.target.closest('.photoshop-picker-wrapper') &&
+          !e.target.closest('.color-circle') &&
+          !e.target.closest('.photoshop-picker')) {
         const isColorPickerDiv = e.target.style && e.target.style.background && e.target.style.cursor === 'pointer';
         if (!isColorPickerDiv) {
           setActiveColorPicker(null);
@@ -275,20 +278,35 @@ const App = () => {
 
     if (ctx) {
       ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(endX, endY);
+
       if (useStrokeOutline) {
-        // Сначала обводка (толще)
+        // Сначала обводка (толще) - рисуем снизу
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
         ctx.strokeStyle = strokeOutlineColor;
         ctx.lineWidth = thickness + 2 * strokeOutlineWidth;
         ctx.stroke();
 
-        // Затем основной ствол поверх
-        ctx.strokeStyle = strokeStyle;
+        // Затем основной ствол поверх (создаем градиент заново если нужно)
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        if (params.UseGradient) {
+          // Создаем градиент заново для второго прохода
+          const freshGradient = ctx.createLinearGradient(x, y, endX, endY);
+          freshGradient.addColorStop(0, params.GradientStartColor);
+          freshGradient.addColorStop(1, params.GradientEndColor);
+          ctx.strokeStyle = freshGradient;
+        } else {
+          ctx.strokeStyle = strokeStyle;
+        }
         ctx.lineWidth = thickness;
         ctx.stroke();
       } else {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
         ctx.strokeStyle = strokeStyle;
         ctx.lineWidth = thickness;
         ctx.stroke();
@@ -929,7 +947,9 @@ const App = () => {
           let lineStr = '';
           if (element.strokeOutline) {
             const outlineWidth = element.strokeWidth + 2 * element.strokeOutline.width;
+            // Сначала обводка (снизу)
             lineStr += `<line x1="${element.x1}" y1="${element.y1}" x2="${element.x2}" y2="${element.y2}" stroke="${element.strokeOutline.color}" stroke-width="${outlineWidth}" stroke-linecap="${element.strokeLinecap || 'round'}" />\n    `;
+            // Затем основная линия поверх (с градиентом если есть)
             lineStr += `<line x1="${element.x1}" y1="${element.y1}" x2="${element.x2}" y2="${element.y2}" stroke="${element.stroke}" stroke-width="${element.strokeWidth}" stroke-linecap="${element.strokeLinecap || 'round'}" />`;
           } else {
             lineStr = `<line x1="${element.x1}" y1="${element.y1}" x2="${element.x2}" y2="${element.y2}" stroke="${element.stroke}" stroke-width="${element.strokeWidth}" stroke-linecap="${element.strokeLinecap || 'round'}" />`;
@@ -1275,100 +1295,81 @@ const App = () => {
               {/* Цветные кружки */}
               <div className="color-picker-circles">
                 <div
-                  className="color-circle"
+                  className="color-circle-wrapper"
                   style={{
+                    position: 'absolute',
                     left: '41.7%',
                     top: '4.18%',
                     width: '3.65%',
-                    background: params.leafGradientStartColor
+                    aspectRatio: '1',
                   }}
-                  onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
                 >
-                  {activeColorPicker === 'leafGradientStartColor' && (
-                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
-                      <HexColorPicker
-                        color={params.leafGradientStartColor}
-                        onChange={(color) => {
-                          handleParamChange('leafGradientStartColor', color);
-                          handleParamChange('leafUseGradient', true);
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div
+                    className="color-circle"
+                    style={{ background: params.leafGradientStartColor }}
+                    onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
+                  />
                 </div>
 
                 <div
-                  className="color-circle"
+                  className="color-circle-wrapper"
                   style={{
+                    position: 'absolute',
                     left: '52.1%',
                     top: '8%',
                     width: '10.4%',
-                    background: params.leafGradientEndColor
+                    aspectRatio: '1',
                   }}
-                  onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientEndColor' ? null : 'leafGradientEndColor')}
                 >
-                  {activeColorPicker === 'leafGradientEndColor' && (
-                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
-                      <HexColorPicker
-                        color={params.leafGradientEndColor}
-                        onChange={(color) => {
-                          handleParamChange('leafGradientEndColor', color);
-                          handleParamChange('leafUseGradient', true);
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div
+                    className="color-circle"
+                    style={{ background: params.leafGradientEndColor }}
+                    onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientEndColor' ? null : 'leafGradientEndColor')}
+                  />
                 </div>
 
                 <div
-                  className="color-circle"
+                  className="color-circle-wrapper"
                   style={{
+                    position: 'absolute',
                     left: '68.45%',
                     top: '82.9%',
                     width: '8.1%',
-                    background: params.GradientEndColor
+                    aspectRatio: '1',
                   }}
-                  onClick={() => setActiveColorPicker(activeColorPicker === 'GradientEndColor' ? null : 'GradientEndColor')}
                 >
-                  {activeColorPicker === 'GradientEndColor' && (
-                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
-                      <HexColorPicker
-                        color={params.GradientEndColor}
-                        onChange={(color) => {
-                          handleParamChange('GradientEndColor', color);
-                          handleParamChange('UseGradient', true);
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div
+                    className="color-circle"
+                    style={{ background: params.GradientEndColor }}
+                    onClick={() => setActiveColorPicker(activeColorPicker === 'GradientEndColor' ? null : 'GradientEndColor')}
+                  />
                 </div>
 
                 <div
-                  className="color-circle"
+                  className="color-circle-wrapper"
                   style={{
+                    position: 'absolute',
                     left: '80.14%',
                     top: '93.5%',
                     width: '2.8%',
-                    background: params.GradientStartColor
+                    aspectRatio: '1',
                   }}
-                  onClick={() => setActiveColorPicker(activeColorPicker === 'GradientStartColor' ? null : 'GradientStartColor')}
                 >
-                  {activeColorPicker === 'GradientStartColor' && (
-                    <div className="color-picker-popup" onClick={(e) => e.stopPropagation()}>
-                      <HexColorPicker
-                        color={params.GradientStartColor}
-                        onChange={(color) => {
-                          handleParamChange('GradientStartColor', color);
-                          handleParamChange('UseGradient', true);
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div
+                    className="color-circle"
+                    style={{ background: params.GradientStartColor }}
+                    onClick={() => setActiveColorPicker(activeColorPicker === 'GradientStartColor' ? null : 'GradientStartColor')}
+                  />
                 </div>
               </div>
 
-              {/* Canvas для растения */}
-              <canvas ref={canvasRef} className="canvas-display" />
+              {/* Canvas для растения с liquid glass эффектом */}
+              <div className="canvas-glass-wrapper">
+                <div className="liquidGlass-effect"></div>
+                <div className="liquidGlass-tint"></div>
+                <div className="liquidGlass-shine"></div>
+                <canvas ref={canvasRef} className="canvas-display" />
+              </div>
             </div>
           </div>
         </main>
@@ -1459,7 +1460,75 @@ const App = () => {
                 </>
               )}
             </div>
+
+            {/* Цвет центра цветка (только для flower) */}
+            {plantType === 'flower' && (
+              <div className="checkbox-item">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={params.centerUseGradient}
+                    onChange={(e) => handleParamChange('centerUseGradient', e.target.checked)}
+                    className="checkbox-input"
+                  />
+                  Градиент центра
+                </label>
+                {params.centerUseGradient && (
+                  <div className="color-picker-panel">
+                    <label className="slider-label-small">Основной:</label>
+                    <input
+                      type="color"
+                      value={params.centerGradientStartColor}
+                      onChange={(e) => handleParamChange('centerGradientStartColor', e.target.value)}
+                      className="color-input-small"
+                    />
+                    <label className="slider-label-small">Градиент:</label>
+                    <input
+                      type="color"
+                      value={params.centerGradientEndColor}
+                      onChange={(e) => handleParamChange('centerGradientEndColor', e.target.value)}
+                      className="color-input-small"
+                    />
+                  </div>
+                )}
+                {!params.centerUseGradient && (
+                  <div className="color-picker-panel">
+                    <label className="slider-label-small">Цвет:</label>
+                    <input
+                      type="color"
+                      value={params.centerColor}
+                      onChange={(e) => handleParamChange('centerColor', e.target.value)}
+                      className="color-input-small"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* PhotoshopPicker встроенный в панель */}
+          {activeColorPicker && (
+            <div className="photoshop-picker-wrapper">
+              <PhotoshopPicker
+                color={
+                  activeColorPicker === 'leafGradientStartColor' ? params.leafGradientStartColor :
+                  activeColorPicker === 'leafGradientEndColor' ? params.leafGradientEndColor :
+                  activeColorPicker === 'GradientEndColor' ? params.GradientEndColor :
+                  params.GradientStartColor
+                }
+                onAccept={() => setActiveColorPicker(null)}
+                onCancel={() => setActiveColorPicker(null)}
+                onChange={(color) => {
+                  handleParamChange(activeColorPicker, color.hex);
+                  if (activeColorPicker.includes('leaf')) {
+                    handleParamChange('leafUseGradient', true);
+                  } else {
+                    handleParamChange('UseGradient', true);
+                  }
+                }}
+              />
+            </div>
+          )}
 
           {/* Кнопки управления */}
           <div className="action-buttons">
@@ -1509,6 +1578,38 @@ const App = () => {
           </div>
         </aside>
       </div>
+
+      {/* SVG Filter for Liquid Glass Effect */}
+      <svg style={{position: 'absolute', width: 0, height: 0}}>
+        <defs>
+          <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="1" seed="5" result="turbulence" />
+
+            <feComponentTransfer in="turbulence" result="mapped">
+              <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
+              <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+              <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+            </feComponentTransfer>
+
+            <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+
+            <feSpecularLighting
+              in="softMap"
+              surfaceScale="5"
+              specularConstant="1"
+              specularExponent="100"
+              lightingColor="white"
+              result="specLight"
+            >
+              <fePointLight x="-200" y="-200" z="300" />
+            </feSpecularLighting>
+
+            <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage" />
+
+            <feDisplacementMap in="SourceGraphic" in2="softMap" scale="150" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 };
