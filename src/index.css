@@ -197,15 +197,26 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin: 10px 0;
-  overflow: visible;
+  margin: 15px 0;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .photoshop-picker-wrapper > div {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   border-radius: 4px !important;
   width: 100% !important;
-  max-width: 340px !important;
+  font-family: 'Comic Sans MS', cursive, sans-serif !important;
 }
 
 /* Уменьшаем внутренние элементы PhotoshopPicker */
@@ -215,11 +226,27 @@ body {
 }
 
 .photoshop-picker-wrapper > div > div:first-child {
-  padding: 8px !important;
+  padding: 10px !important;
 }
 
 .photoshop-picker-wrapper .flexbox-fix:first-child > div:first-child {
-  height: 120px !important;
+  height: 140px !important;
+}
+
+/* Стилизация кнопок PhotoshopPicker */
+.photoshop-picker-wrapper button {
+  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  border-radius: 2px !important;
+  text-transform: lowercase !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+/* Убираем ограничение высоты заголовка */
+.photoshop-picker-wrapper > div > div:first-child {
+  height: auto !important;
+  min-height: 30px !important;
+  padding-top: 8px !important;
 }
 
 /* Правая панель с параметрами */
@@ -430,6 +457,7 @@ body {
   position: relative;
   width: 100%;
   height: 200px;
+  min-height: 200px;
   background: #615F40;
   border: 1px solid #000;
   margin-top: 10px;

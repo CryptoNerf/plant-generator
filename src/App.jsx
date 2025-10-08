@@ -80,25 +80,7 @@ const App = () => {
     };
   }, [debouncedUpdateScreenSize]);
 
-  // Close color picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (activeColorPicker &&
-          !e.target.closest('.photoshop-picker-wrapper') &&
-          !e.target.closest('.color-circle') &&
-          !e.target.closest('.photoshop-picker')) {
-        const isColorPickerDiv = e.target.style && e.target.style.background && e.target.style.cursor === 'pointer';
-        if (!isColorPickerDiv) {
-          setActiveColorPicker(null);
-        }
-      }
-    };
-
-    if (activeColorPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [activeColorPicker]);
+  // Color picker closes only via OK/Cancel buttons, not by clicking outside
 
   useEffect(() => {
     generatePlant();
