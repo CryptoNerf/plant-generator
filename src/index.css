@@ -2,20 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  * {
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  }
+
+  html {
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  }
+}
+
 /* Base Styles */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Comic Sans MS', cursive, sans-serif !important;
 }
 
-body, input, button, select, textarea, label {
+body, input, button, select, textarea, label, div, span, p, h1, h2, h3, h4, h5, h6 {
   font-family: 'Comic Sans MS', cursive, sans-serif !important;
 }
 
 body {
   margin: 0;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: 'Comic Sans MS', cursive, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image: url('/fone.png');

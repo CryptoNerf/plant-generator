@@ -7,6 +7,7 @@ const App = () => {
   const drawingRef = useRef();
   const previewCtxRef = useRef(null);
   const drawingState = useRef({ isDrawing: false, points: [] });
+  const scrollPosition = useRef(0);
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
@@ -751,12 +752,17 @@ const App = () => {
     const pos = getEventPos(e, e.currentTarget);
     drawingState.current.points.push(pos);
 
+    // Сохраняем текущую позицию скролла
+    scrollPosition.current = window.pageYOffset || document.documentElement.scrollTop;
+
     // Блокируем скролл на всей странице во время рисования
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollPosition.current}px`;
     document.body.style.width = '100%';
 
     e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleDrawMove = (e) => {
@@ -778,15 +784,18 @@ const App = () => {
       }
     }
     e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleDrawEnd = (e) => {
     drawingState.current.isDrawing = false;
 
-    // Разблокируем скролл после завершения рисования
+    // Разблокируем скролл и восстанавливаем позицию
     document.body.style.overflow = '';
     document.body.style.position = '';
+    document.body.style.top = '';
     document.body.style.width = '';
+    window.scrollTo(0, scrollPosition.current);
 
     const points = [...drawingState.current.points];
     if (points.length > 1) {
@@ -806,6 +815,7 @@ const App = () => {
       }
     }
     e.preventDefault();
+    e.stopPropagation();
   };
 
   // Старые функции заменены на новые выше
