@@ -206,20 +206,17 @@ const App = () => {
   }, [plantType, params, getCanvasSize, customLeafPoints]);
 
   const createGradient = (ctx, x1, y1, x2, y2, startColor, endColor, id, svgDefs) => {
-    // Оптимизация: переиспользуем градиенты с одинаковыми цветами
-    const gradientKey = `grad_${startColor.replace('#', '')}_${endColor.replace('#', '')}`;
-    const existingGradient = svgDefs.find(def => def.includes(`id="${gradientKey}"`));
+    // Для SVG нужно создавать уникальные градиенты для каждой линии с их координатами
+    const gradientId = `grad_${startColor.replace('#', '')}_${endColor.replace('#', '')}_${Math.random().toString(36).substr(2, 6)}`;
 
-    if (!existingGradient) {
-      svgDefs.push(
-        `<linearGradient id="${gradientKey}">
-          <stop offset="0%" stop-color="${startColor}" />
-          <stop offset="100%" stop-color="${endColor}" />
-        </linearGradient>`
-      );
-    }
+    svgDefs.push(
+      `<linearGradient id="${gradientId}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${startColor}" />
+        <stop offset="100%" stop-color="${endColor}" />
+      </linearGradient>`
+    );
 
-    const svgStyle = `url(#${gradientKey})`;
+    const svgStyle = `url(#${gradientId})`;
 
     if (ctx) {
       const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
@@ -920,7 +917,7 @@ const App = () => {
 
   const generateSVG = () => {
     const { width: svgWidth, height: svgHeight } = getCanvasSize();
-    
+
     const defsStr = svgDefs.join('\n    ');
     
     const svgElements_str = svgElements.map(element => {

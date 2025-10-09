@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            display: block;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .icon-preview {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .icon-item {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Генератор PWA иконок</h1>
+
+        <div class="instructions">
+            <h3>Инструкция:</h3>
+            <ol>
+                <li>Нажмите кнопку "Загрузить icon.png"</li>
+                <li>Иконки будут автоматически созданы в нужных размерах</li>
+                <li>Нажмите кнопки "Скачать" чтобы сохранить каждую иконку</li>
+                <li>Сохраните файлы в папку <code>public/</code></li>
+            </ol>
+        </div>
+
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <button onclick="document.getElementById('fileInput').click()">Загрузить icon.png</button>
+
+        <div class="icon-preview" id="iconPreview"></div>
+    </div>
+
+    <script>
+        const sizes = [192, 512];
+        let sourceImage = null;
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    sourceImage = img;
+                    generateIcons();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function generateIcons() {
+            const container = document.getElementById('iconPreview');
+            container.innerHTML = '';
+
+            sizes.forEach(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Рисуем изображение с сглаживанием
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(sourceImage, 0, 0, size, size);
+
+                const iconItem = document.createElement('div');
+                iconItem.className = 'icon-item';
+
+                const previewCanvas = document.createElement('canvas');
+                previewCanvas.width = 100;
+                previewCanvas.height = 100;
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.imageSmoothingEnabled = true;
+                previewCtx.imageSmoothingQuality = 'high';
+                previewCtx.drawImage(canvas, 0, 0, 100, 100);
+
+                const label = document.createElement('div');
+                label.textContent = `${size}x${size}`;
+                label.style.marginTop = '10px';
+                label.style.fontWeight = 'bold';
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.textContent = 'Скачать';
+                downloadBtn.onclick = () => downloadCanvas(canvas, `pwa-${size}x${size}.png`);
+
+                iconItem.appendChild(previewCanvas);
+                iconItem.appendChild(label);
+                iconItem.appendChild(downloadBtn);
+                container.appendChild(iconItem);
+            });
+        }
+
+        function downloadCanvas(canvas, filename) {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+    </script>
+</body>
+</html>
