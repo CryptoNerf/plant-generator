@@ -750,6 +750,12 @@ const App = () => {
     drawingState.current.points = [];
     const pos = getEventPos(e, e.currentTarget);
     drawingState.current.points.push(pos);
+
+    // Блокируем скролл на всей странице во время рисования
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
     e.preventDefault();
   };
 
@@ -776,6 +782,12 @@ const App = () => {
 
   const handleDrawEnd = (e) => {
     drawingState.current.isDrawing = false;
+
+    // Разблокируем скролл после завершения рисования
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+
     const points = [...drawingState.current.points];
     if (points.length > 1) {
       setCustomLeafPoints(points);
