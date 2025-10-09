@@ -1248,19 +1248,19 @@ const App = () => {
             className={`preset-item ${plantType === 'tree' ? 'active' : ''}`}
             onClick={() => setPlantType('tree')}
           >
-            <img src="src/assets/preset-tree.png" alt="Tree" />
+            <img src="/assets/preset-tree.png" alt="Tree" />
           </div>
           <div
             className={`preset-item ${plantType === 'flower' ? 'active' : ''}`}
             onClick={() => setPlantType('flower')}
           >
-            <img src="src/assets/preset-flower.png" alt="Flower" />
+            <img src="/assets/preset-flower.png" alt="Flower" />
           </div>
           <div
             className={`preset-item ${plantType === 'bush' ? 'active' : ''}`}
             onClick={() => setPlantType('bush')}
           >
-            <img src="src/assets/preset-bush.png" alt="Bush" />
+            <img src="/assets/preset-bush.png" alt="Bush" />
           </div>
         </aside>
 
@@ -1269,8 +1269,8 @@ const App = () => {
           <div className="plant-canvas-wrapper">
             <div className="generator-wrapper">
               {/* Фоновый SVG - разный для десктопа и мобильных */}
-              <img src="src/assets/GardenGenerator.svg" alt="Generator" className="generator-bg-image desktop-generator" />
-              <img src="src/assets/PhoneGenerator.svg" alt="Generator" className="generator-bg-image mobile-generator" />
+              <img src="/assets/GardenGenerator.svg" alt="Generator" className="generator-bg-image desktop-generator" />
+              <img src="/assets/PhoneGenerator.svg" alt="Generator" className="generator-bg-image mobile-generator" />
 
               {/* Цветные кружки */}
               <div className="color-picker-circles">
@@ -1358,19 +1358,19 @@ const App = () => {
                 className={`mobile-preset-item ${plantType === 'tree' ? 'active' : ''}`}
                 onClick={() => setPlantType('tree')}
               >
-                <img src="src/assets/preset-tree.png" alt="Tree" />
+                <img src="/assets/preset-tree.png" alt="Tree" />
               </div>
               <div
                 className={`mobile-preset-item ${plantType === 'flower' ? 'active' : ''}`}
                 onClick={() => setPlantType('flower')}
               >
-                <img src="src/assets/preset-flower.png" alt="Flower" />
+                <img src="/assets/preset-flower.png" alt="Flower" />
               </div>
               <div
                 className={`mobile-preset-item ${plantType === 'bush' ? 'active' : ''}`}
                 onClick={() => setPlantType('bush')}
               >
-                <img src="src/assets/preset-bush.png" alt="Bush" />
+                <img src="/assets/preset-bush.png" alt="Bush" />
               </div>
             </div>
           </div>
@@ -1545,7 +1545,7 @@ const App = () => {
           {/* Drawing canvas - всегда видимый */}
           <div className="drawing-canvas-wrapper">
             <img
-              src="src/assets/list.svg"
+              src="/assets/list.svg"
               alt="Draw leaf"
               className={`drawing-placeholder ${customLeafPoints.length > 0 ? 'hidden' : ''}`}
             />
