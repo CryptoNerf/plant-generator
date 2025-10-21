@@ -4,11 +4,11 @@
 
 @layer base {
   * {
-    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+    font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
   }
 
   html {
-    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+    font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
   }
 }
 
@@ -17,16 +17,16 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
 }
 
 body, input, button, select, textarea, label, div, span, p, h1, h2, h3, h4, h5, h6 {
-  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
 }
 
 body {
   margin: 0;
-  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image: url('/fone.png');
@@ -245,13 +245,14 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   border-radius: 4px !important;
   width: 100% !important;
-  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
 }
 
 /* Уменьшаем внутренние элементы PhotoshopPicker */
 .photoshop-picker-wrapper input,
 .photoshop-picker-wrapper label {
   font-size: 11px !important;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
 }
 
 .photoshop-picker-wrapper > div > div:first-child {
@@ -264,7 +265,7 @@ body {
 
 /* Стилизация кнопок PhotoshopPicker */
 .photoshop-picker-wrapper button {
-  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive !important;
   border-radius: 2px !important;
   text-transform: lowercase !important;
   font-size: 12px !important;
@@ -494,8 +495,8 @@ body {
   background: #615F40;
   border: 1px solid #000;
   margin-top: 10px;
-  touch-action: none;
   overflow: hidden;
+  /* touch-action управляется динамически через JS */
 }
 
 .drawing-canvas {
@@ -554,11 +555,11 @@ body {
 }
 
 /* Скачивание */
-.download-section {
+/* .download-section {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
+} */
 
 .download-label {
   font-size: 14px;
@@ -588,6 +589,37 @@ body {
 .btn-download:hover {
   background: #6E6C4A;
   transform: translateY(-1px);
+}
+
+/* Секция поделиться */
+.share-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.share-text {
+  color: #E8E8E8;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.share-link {
+  display: inline-block;
+  transition: all 0.3s;
+}
+
+.share-link:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.share-logo {
+  max-width: 200px;
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Чекбоксы и цвета */
@@ -760,9 +792,9 @@ body {
     z-index: 10;
   }
 
-  /* Фиксируем высоту контейнера чекбоксов чтобы избежать дёргания */
+  /* Убираем фиксированную высоту для чекбоксов */
   .outline-checkboxes {
-    min-height: 200px;
+    min-height: auto;
   }
 
   .parameters-title {
@@ -885,6 +917,15 @@ body {
 
   .color-picker-panel {
     border-radius: 4px;
+  }
+
+  /* Адаптация секции "поделиться" для мобильных */
+  .share-text {
+    font-size: 16px;
+  }
+
+  .share-logo {
+    max-width: 250px;
   }
 }
 

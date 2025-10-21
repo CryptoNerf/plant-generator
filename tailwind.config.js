@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'sans': ['"Comic Sans MS"', 'cursive', 'sans-serif'],
+        'sans': ['"Comic Sans MS"', '"Comic Sans"', '"Chalkboard SE"', '"Bradley Hand"', 'cursive'],
       },
     },
   },

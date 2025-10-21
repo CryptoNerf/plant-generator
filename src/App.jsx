@@ -8,6 +8,7 @@ const App = () => {
   const previewCtxRef = useRef(null);
   const drawingState = useRef({ isDrawing: false, points: [] });
   const scrollPosition = useRef(0);
+  const canvasRect = useRef(null);
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
@@ -726,40 +727,47 @@ const App = () => {
     setParams(newParams);
   };
 
-  // Drawing functions с поддержкой touch событий
+  // Drawing functions с поддержкой touch событий - УПРОЩЁННАЯ ВЕРСИЯ
   const getEventPos = (e, canvas) => {
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
-    
-    if (e.touches) {
+
+    if (e.touches && e.touches.length > 0) {
       // Touch событие
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      // TouchEnd событие
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
     } else {
       // Mouse событие
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     const x = (clientX - rect.left) * (DRAWING_CANVAS_SIZE / rect.width);
     const y = (clientY - rect.top) * (DRAWING_CANVAS_SIZE / rect.height);
-    return { x, y };
+
+    // Ограничиваем координаты границами canvas
+    const clampedX = Math.max(0, Math.min(x, DRAWING_CANVAS_SIZE));
+    const clampedY = Math.max(0, Math.min(y, DRAWING_CANVAS_SIZE));
+
+    return { x: clampedX, y: clampedY };
   };
 
   const handleDrawStart = (e) => {
     drawingState.current.isDrawing = true;
     drawingState.current.points = [];
+
     const pos = getEventPos(e, e.currentTarget);
     drawingState.current.points.push(pos);
 
-    // Сохраняем текущую позицию скролла
-    scrollPosition.current = window.pageYOffset || document.documentElement.scrollTop;
-
-    // Блокируем скролл на всей странице во время рисования
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollPosition.current}px`;
-    document.body.style.width = '100%';
+    // Простая блокировка только для canvas wrapper
+    const wrapper = e.currentTarget.parentElement;
+    if (wrapper) {
+      wrapper.style.touchAction = 'none';
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -767,8 +775,15 @@ const App = () => {
 
   const handleDrawMove = (e) => {
     if (!drawingState.current.isDrawing) return;
+
     const pos = getEventPos(e, e.currentTarget);
-    drawingState.current.points.push(pos);
+
+    // Добавляем точку только если она отличается от предыдущей
+    const lastPoint = drawingState.current.points[drawingState.current.points.length - 1];
+    if (!lastPoint || Math.abs(pos.x - lastPoint.x) > 0.5 || Math.abs(pos.y - lastPoint.y) > 0.5) {
+      drawingState.current.points.push(pos);
+    }
+
     const ctx = previewCtxRef.current;
     if (ctx) {
       ctx.clearRect(0, 0, DRAWING_CANVAS_SIZE, DRAWING_CANVAS_SIZE);
@@ -790,12 +805,11 @@ const App = () => {
   const handleDrawEnd = (e) => {
     drawingState.current.isDrawing = false;
 
-    // Разблокируем скролл и восстанавливаем позицию
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    window.scrollTo(0, scrollPosition.current);
+    // Возвращаем touch-action
+    const wrapper = e.currentTarget.parentElement;
+    if (wrapper) {
+      wrapper.style.touchAction = '';
+    }
 
     const points = [...drawingState.current.points];
     if (points.length > 1) {
@@ -1599,6 +1613,14 @@ const App = () => {
               <button onClick={downloadPNG} className="btn-download">PNG</button>
               <button onClick={downloadSVG} className="btn-download">SVG</button>
             </div>
+          </div>
+
+          {/* Ссылка на галерею */}
+          <div className="share-section">
+            <p className="share-text">Поделись растением на</p>
+            <a href="https://html-garden.vercel.app/index.html" target="_blank" rel="noopener noreferrer" className="share-link">
+              <img src="/assets/html-garden.png" alt="HTML Garden" className="share-logo" />
+            </a>
           </div>
         </aside>
       </div>
