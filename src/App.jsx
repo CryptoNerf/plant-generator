@@ -1618,7 +1618,7 @@ const App = () => {
           {/* Ссылка на галерею */}
           <div className="share-section">
             <p className="share-text">Поделись растением на</p>
-            <a href="https://html-garden.vercel.app/index.html" target="_blank" rel="noopener noreferrer" className="share-link">
+            <a href="https://www.html-garden.fun/index.html" target="_blank" rel="noopener noreferrer" className="share-link">
               <img src="/assets/html-garden.png" alt="HTML Garden" className="share-logo" />
             </a>
           </div>
