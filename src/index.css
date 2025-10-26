@@ -303,6 +303,44 @@ body {
   letter-spacing: 1px;
 }
 
+/* Селектор типа ствола */
+.trunk-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trunk-type-dropdown {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(60, 50, 40, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 0;
+  color: #E8E8E8;
+  font-size: 14px;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.trunk-type-dropdown:hover {
+  background: rgba(70, 60, 50, 0.6);
+}
+
+.trunk-type-dropdown:focus {
+  border-color: #8B8B6B;
+}
+
+.trunk-type-dropdown option {
+  background: #615F40;
+  color: #E8E8E8;
+  padding: 8px;
+}
+
 .controls-section {
   display: flex;
   flex-direction: column;
@@ -905,6 +943,12 @@ body {
   .btn-download,
   .btn-drawing {
     font-size: 16px;
+  }
+
+  /* Стили для trunk type dropdown на мобильных */
+  .trunk-type-dropdown {
+    font-size: 16px;
+    padding: 12px;
   }
 
   /* Фиксируем высоту и форму color input на мобильных */

@@ -25,6 +25,9 @@ const App = () => {
     centerColor: '#FFD700',
     centerSize: 10,
 
+    // Тип ствола/стебля
+    trunkType: 'straight', // 'straight', 'organic', 'segmented'
+
     // Новые параметры для градиента и обводки
     UseGradient: false,
     GradientStartColor: '#8B4513',
@@ -230,6 +233,141 @@ const App = () => {
     }
   };
 
+  // Функция для рисования прямого ствола (текущий вариант)
+  const drawStraightTrunk = (ctx, x, y, endX, endY, thickness, strokeStyle, svgStroke, useStrokeOutline, strokeOutlineColor, strokeOutlineWidth, svgElements) => {
+    if (ctx) {
+      ctx.lineCap = 'round';
+
+      if (useStrokeOutline) {
+        // Сначала обводка
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = strokeOutlineColor;
+        ctx.lineWidth = thickness + 2 * strokeOutlineWidth;
+        ctx.stroke();
+
+        // Затем основной ствол поверх
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        if (params.UseGradient) {
+          const freshGradient = ctx.createLinearGradient(x, y, endX, endY);
+          freshGradient.addColorStop(0, params.GradientStartColor);
+          freshGradient.addColorStop(1, params.GradientEndColor);
+          ctx.strokeStyle = freshGradient;
+        } else {
+          ctx.strokeStyle = strokeStyle;
+        }
+        ctx.lineWidth = thickness;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = thickness;
+        ctx.stroke();
+      }
+    }
+
+    // SVG элемент
+    const svgLine = {
+      type: 'line',
+      x1: x, y1: y, x2: endX, y2: endY,
+      stroke: svgStroke,
+      strokeWidth: thickness,
+      strokeLinecap: 'round'
+    };
+
+    if (useStrokeOutline) {
+      svgLine.strokeOutline = {
+        color: strokeOutlineColor,
+        width: strokeOutlineWidth
+      };
+    }
+
+    svgElements.push(svgLine);
+  };
+
+  // Детерминированный псевдо-random на основе координат
+  const seededRandom = (x, y) => {
+    const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    return seed - Math.floor(seed);
+  };
+
+  // Функция для рисования органического ствола с изгибами (quadratic curve)
+  const drawOrganicTrunk = (ctx, x, y, endX, endY, thickness, strokeStyle, svgStroke, useStrokeOutline, strokeOutlineColor, strokeOutlineWidth, svgElements) => {
+    // Создаем контрольную точку для изгиба
+    const midX = (x + endX) / 2;
+    const midY = (y + endY) / 2;
+    const angle = Math.atan2(endY - y, endX - x);
+    const perpAngle = angle + Math.PI / 2;
+    const length = Math.sqrt((endX - x) ** 2 + (endY - y) ** 2);
+    // Используем детерминированный random на основе координат
+    const randomValue = seededRandom(x + y, endX + endY) - 0.5;
+    const offset = randomValue * Math.max(length * 0.3, thickness * 3);
+    const ctrlX = midX + Math.cos(perpAngle) * offset;
+    const ctrlY = midY + Math.sin(perpAngle) * offset;
+
+    if (ctx) {
+      ctx.lineCap = 'round';
+
+      if (useStrokeOutline) {
+        // Обводка
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        ctx.strokeStyle = strokeOutlineColor;
+        ctx.lineWidth = thickness + 2 * strokeOutlineWidth;
+        ctx.stroke();
+
+        // Основная линия
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        if (params.UseGradient) {
+          const freshGradient = ctx.createLinearGradient(x, y, endX, endY);
+          freshGradient.addColorStop(0, params.GradientStartColor);
+          freshGradient.addColorStop(1, params.GradientEndColor);
+          ctx.strokeStyle = freshGradient;
+        } else {
+          ctx.strokeStyle = strokeStyle;
+        }
+        ctx.lineWidth = thickness;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = thickness;
+        ctx.stroke();
+      }
+    }
+
+    // SVG элемент с quadratic curve
+    const pathD = `M ${x} ${y} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`;
+    const svgPath = {
+      type: 'path',
+      d: pathD,
+      stroke: svgStroke,
+      fill: 'none',
+      strokeWidth: thickness,
+      strokeLinecap: 'round'
+    };
+
+    if (useStrokeOutline) {
+      svgPath.strokeOutline = {
+        color: strokeOutlineColor,
+        width: strokeOutlineWidth
+      };
+    }
+
+    svgElements.push(svgPath);
+  };
+
+
   const drawTree = (ctx, x, y, length, angle, thickness, level, svgElements, svgDefs) => {
     if (level <= 0 || length < 3 || thickness < 0.5 || level > 8) return;
 
@@ -257,60 +395,16 @@ const App = () => {
       svgStroke = grad.svgStyle;
     }
 
-    if (ctx) {
-      ctx.lineCap = 'round';
-
-      if (useStrokeOutline) {
-        // Сначала обводка (толще) - рисуем снизу
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(endX, endY);
-        ctx.strokeStyle = strokeOutlineColor;
-        ctx.lineWidth = thickness + 2 * strokeOutlineWidth;
-        ctx.stroke();
-
-        // Затем основной ствол поверх (создаем градиент заново если нужно)
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(endX, endY);
-        if (params.UseGradient) {
-          // Создаем градиент заново для второго прохода
-          const freshGradient = ctx.createLinearGradient(x, y, endX, endY);
-          freshGradient.addColorStop(0, params.GradientStartColor);
-          freshGradient.addColorStop(1, params.GradientEndColor);
-          ctx.strokeStyle = freshGradient;
-        } else {
-          ctx.strokeStyle = strokeStyle;
-        }
-        ctx.lineWidth = thickness;
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(endX, endY);
-        ctx.strokeStyle = strokeStyle;
-        ctx.lineWidth = thickness;
-        ctx.stroke();
-      }
+    // Выбираем функцию рисования в зависимости от типа ствола
+    switch (params.trunkType) {
+      case 'organic':
+        drawOrganicTrunk(ctx, x, y, endX, endY, thickness, strokeStyle, svgStroke, useStrokeOutline, strokeOutlineColor, strokeOutlineWidth, svgElements);
+        break;
+      case 'straight':
+      default:
+        drawStraightTrunk(ctx, x, y, endX, endY, thickness, strokeStyle, svgStroke, useStrokeOutline, strokeOutlineColor, strokeOutlineWidth, svgElements);
+        break;
     }
-    
-    // SVG элемент
-    const svgLine = {
-      type: 'line',
-      x1: x, y1: y, x2: endX, y2: endY,
-      stroke: svgStroke,
-      strokeWidth: thickness,
-      strokeLinecap: 'round'
-    };
-
-    if (useStrokeOutline) {
-      svgLine.strokeOutline = {
-        color: strokeOutlineColor,
-        width: strokeOutlineWidth
-      };
-    }
-
-    svgElements.push(svgLine);
     
     // ИСПРАВЛЕНО: передаем правильный угол поворота для листьев
     if (level <= 2 && Math.random() < params.leafDensity) {
@@ -517,42 +611,16 @@ const App = () => {
       svgStemStroke = grad.svgStyle;
     }
 
-    if (ctx) {
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX, stemEndY);
-      if (stemUseStroke) {
-        ctx.strokeStyle = stemStrokeStyle;
-        ctx.lineWidth = stemThickness + 2 * stemStrokeWidth;
-        ctx.stroke();
-
-        ctx.strokeStyle = stemFillStyle;
-        ctx.lineWidth = stemThickness;
-        ctx.stroke();
-      } else {
-        ctx.strokeStyle = stemFillStyle;
-        ctx.lineWidth = stemThickness;
-        ctx.stroke();
-      }
+    // Рисуем стебель используя выбранный тип ствола
+    switch (params.trunkType) {
+      case 'organic':
+        drawOrganicTrunk(ctx, centerX, centerY, centerX, stemEndY, stemThickness, stemFillStyle, svgStemStroke, stemUseStroke, stemStrokeStyle, stemStrokeWidth, svgElements);
+        break;
+      case 'straight':
+      default:
+        drawStraightTrunk(ctx, centerX, centerY, centerX, stemEndY, stemThickness, stemFillStyle, svgStemStroke, stemUseStroke, stemStrokeStyle, stemStrokeWidth, svgElements);
+        break;
     }
-    
-    const svgStem = {
-      type: 'line',
-      x1: centerX, y1: centerY, x2: centerX, y2: stemEndY,
-      stroke: svgStemStroke,
-      strokeWidth: stemThickness,
-      strokeLinecap: 'round'
-    };
-
-    if (stemUseStroke) {
-      svgStem.strokeOutline = {
-        color: stemStrokeStyle,
-        width: stemStrokeWidth
-      };
-    }
-
-    svgElements.push(svgStem);
     
     const petals = Math.max(3, Math.min(params.branches, 15));
     const petalOffset = params.leafSize * 1.5 * scale * 0.95;
@@ -954,9 +1022,12 @@ const App = () => {
   const generateSVG = () => {
     const { width: svgWidth, height: svgHeight } = getCanvasSize();
 
-    const defsStr = svgDefs.join('\n    ');
-    
-    const svgElements_str = svgElements.map(element => {
+    // Собираем defs из svgDefs и элементов с типом 'defs'
+    const additionalDefs = svgElements.filter(el => el.type === 'defs').map(el => el.content).join('\n    ');
+    const defsStr = svgDefs.join('\n    ') + (additionalDefs ? '\n    ' + additionalDefs : '');
+
+    // Фильтруем элементы, исключая 'defs' которые уже в defsStr
+    const svgElements_str = svgElements.filter(el => el.type !== 'defs').map(element => {
       switch (element.type) {
         case 'line':
           let lineStr = '';
@@ -982,11 +1053,42 @@ const App = () => {
           if (element.stroke) {
             circleStrokeAttrs = `stroke="${element.stroke}" stroke-width="${element.strokeWidth}"`;
           }
-          return `<circle cx="${element.cx}" cy="${element.cy}" r="${element.r}" fill="${element.fill}" ${circleStrokeAttrs}/>`;
+          let opacityAttr = '';
+          if (element.opacity !== undefined && element.opacity !== 1) {
+            opacityAttr = `opacity="${element.opacity}"`;
+          }
+          return `<circle cx="${element.cx}" cy="${element.cy}" r="${element.r}" fill="${element.fill}" ${circleStrokeAttrs} ${opacityAttr}/>`;
+        case 'defs':
+          // Специальный тип для вставки градиентов внутрь defs
+          return element.content;
         case 'path':
-          let pathStr = `<path d="${element.d}" fill="${element.fill}" transform="${element.transform}"`;
+          let pathStr = `<path d="${element.d}" fill="${element.fill}"`;
+          if (element.transform) {
+            pathStr += ` transform="${element.transform}"`;
+          }
           if (element.stroke) {
-            pathStr += ` stroke="${element.stroke}" stroke-width="${element['stroke-width']}" vector-effect="${element['vector-effect']}"`;
+            pathStr += ` stroke="${element.stroke}"`;
+            if (element['stroke-width']) {
+              pathStr += ` stroke-width="${element['stroke-width']}"`;
+            } else if (element.strokeWidth) {
+              pathStr += ` stroke-width="${element.strokeWidth}"`;
+            }
+            if (element['vector-effect']) {
+              pathStr += ` vector-effect="${element['vector-effect']}"`;
+            }
+            if (element.strokeLinecap) {
+              pathStr += ` stroke-linecap="${element.strokeLinecap}"`;
+            }
+          }
+          // Поддержка обводки для path
+          if (element.strokeOutline) {
+            const outlineWidth = (element.strokeWidth || parseFloat(element['stroke-width'])) + 2 * element.strokeOutline.width;
+            let outlineStr = `<path d="${element.d}" fill="none" stroke="${element.strokeOutline.color}" stroke-width="${outlineWidth}"`;
+            if (element.strokeLinecap) {
+              outlineStr += ` stroke-linecap="${element.strokeLinecap}"`;
+            }
+            outlineStr += ' />\n    ';
+            pathStr = outlineStr + pathStr;
           }
           pathStr += ' />';
           return pathStr;
@@ -1415,6 +1517,19 @@ const App = () => {
         {/* Правая панель с параметрами */}
         <aside className="parameters-sidebar">
           <h2 className="parameters-title">Параметры</h2>
+
+          {/* Выбор типа ствола */}
+          <div className="trunk-type-selector">
+            <label className="slider-label">Тип ствола:</label>
+            <select
+              value={params.trunkType}
+              onChange={(e) => handleParamChange('trunkType', e.target.value)}
+              className="trunk-type-dropdown"
+            >
+              <option value="straight">Прямой</option>
+              <option value="organic">Органический</option>
+            </select>
+          </div>
 
           {/* Слайдеры */}
           <div className="controls-section">
