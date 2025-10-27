@@ -56,6 +56,7 @@ const App = () => {
   const [svgElements, setSvgElements] = useState([]);
   const [svgDefs, setSvgDefs] = useState([]);
   const [customLeafPoints, setCustomLeafPoints] = useState([]);
+  const [randomSeed, setRandomSeed] = useState(0);
   const DRAWING_CANVAS_SIZE = 240;
 
   // Обработка изменения размера экрана с дебаунсом
@@ -90,7 +91,7 @@ const App = () => {
   useEffect(() => {
     generatePlant();
     generatePreview();
-  }, [plantType, params, screenSize, customLeafPoints]);
+  }, [plantType, params, screenSize, customLeafPoints, randomSeed]);
 
   const generatePreview = useCallback(() => {
     const canvas = previewCanvasRef.current;
@@ -143,7 +144,7 @@ const App = () => {
     } catch (e) {
       console.error('Error generating preview:', e);
     }
-  }, [plantType, params, customLeafPoints]);
+  }, [plantType, params, customLeafPoints, randomSeed]);
 
   const getCanvasSize = useCallback(() => {
     const width = screenSize.width || (typeof window !== 'undefined' ? window.innerWidth : 600);
@@ -208,7 +209,7 @@ const App = () => {
     
     setSvgElements(tempSvgElements);
     setSvgDefs(tempSvgDefs);
-  }, [plantType, params, getCanvasSize, customLeafPoints]);
+  }, [plantType, params, getCanvasSize, customLeafPoints, randomSeed]);
 
   const createGradient = (ctx, x1, y1, x2, y2, startColor, endColor, id, svgDefs) => {
     // Для SVG нужно создавать уникальные градиенты для каждой линии с их координатами
@@ -290,9 +291,9 @@ const App = () => {
     svgElements.push(svgLine);
   };
 
-  // Детерминированный псевдо-random на основе координат
+  // Детерминированный псевдо-random на основе координат и seed
   const seededRandom = (x, y) => {
-    const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    const seed = Math.sin(x * 12.9898 + y * 78.233 + randomSeed * 43758.5453) * 43758.5453;
     return seed - Math.floor(seed);
   };
 
@@ -407,8 +408,11 @@ const App = () => {
     }
     
     // ИСПРАВЛЕНО: передаем правильный угол поворота для листьев
-    if (level <= 2 && Math.random() < params.leafDensity) {
-      const leafRotation = angle + (Math.random() - 0.5) * Math.PI * 0.5;
+    // Используем детерминированную генерацию для листьев
+    const leafRandom1 = seededRandom(endX + endY, x + y);
+    const leafRandom2 = seededRandom(endX * 2, endY * 2);
+    if (level <= 2 && leafRandom1 < params.leafDensity) {
+      const leafRotation = angle + (leafRandom2 - 0.5) * Math.PI * 0.5;
       drawLeaf(ctx, endX, endY, svgElements, svgDefs, scale, leafRotation);
     }
     
@@ -416,9 +420,11 @@ const App = () => {
     const newThickness = Math.max(0.5, thickness * 0.7);
     const angleStep = params.angle * Math.PI / 180;
     const maxBranches = Math.min(params.branches, 6);
-    
+
     for (let i = 0; i < maxBranches; i++) {
-      const branchAngle = angle + (angleStep * (i - maxBranches/2 + 0.5)) + (Math.random() - 0.5) * 0.2;
+      // Используем детерминированную генерацию для углов веток
+      const branchRandom = seededRandom(endX + i * 50, endY + level * 100);
+      const branchAngle = angle + (angleStep * (i - maxBranches/2 + 0.5)) + (branchRandom - 0.5) * 0.2;
       drawTree(ctx, endX, endY, newLength, branchAngle, newThickness, level - 1, svgElements, svgDefs);
     }
   };
@@ -681,12 +687,16 @@ const App = () => {
     const scale = Math.min(screenSize.width || 600, 600) / 600;
 
     for (let i = 0; i < branches; i++) {
-      const angle = Math.random() * Math.PI * 2;
+      // Используем детерминированную генерацию на основе индекса ветки
+      const angleRandom = seededRandom(i * 100, centerX + centerY);
+      const lengthRandom = seededRandom(i * 200 + 1, centerX + centerY);
+
+      const angle = angleRandom * Math.PI * 2;
       // Масштабируем до 0.95 для баланса
-      const length = Math.max(25, params.length * (0.5 + Math.random() * 0.4) * scale * 0.95);
+      const length = Math.max(25, params.length * (0.5 + lengthRandom * 0.4) * scale * 0.95);
       const thickness = Math.max(1, params.thickness * 0.6 * scale * 0.95);
-      
-      drawTree(ctx, centerX, centerY, length, angle - Math.PI/2, thickness, 
+
+      drawTree(ctx, centerX, centerY, length, angle - Math.PI/2, thickness,
         Math.max(1, Math.min(params.levels, 4)), svgElements, svgDefs);
     }
   };
@@ -1688,7 +1698,7 @@ const App = () => {
             <button onClick={generateRandomParams} className="btn-random">
               random
             </button>
-            <button onClick={generatePlant} className="btn-generate">
+            <button onClick={() => setRandomSeed(prev => prev + 1)} className="btn-generate">
               сгенерировать
             </button>
           </div>
