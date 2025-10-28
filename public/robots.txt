@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.garden-generator.site/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 0
+
+# Disallow specific paths if needed
+# Disallow: /api/
+# Disallow: /private/
