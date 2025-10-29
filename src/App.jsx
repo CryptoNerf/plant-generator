@@ -378,8 +378,12 @@ const App = () => {
     // Адаптивный масштаб в зависимости от ширины экрана
     let scaleFactor = 0.95; // desktop по умолчанию
     const width = screenSize.width || 600;
-    if (width <= 640) {
-      scaleFactor = 1.15; // телефоны
+    if (width <= 470) {
+      scaleFactor = 1.15; // маленькие телефоны
+    } else if (width <= 520) {
+      scaleFactor = 1.05; // средние телефоны
+    } else if (width <= 640) {
+      scaleFactor = 0.95; // большие телефоны
     } else if (width <= 768) {
       scaleFactor = 0.92; // маленькие планшеты
     } else if (width <= 1024) {
@@ -613,8 +617,12 @@ const App = () => {
     // Адаптивный масштаб в зависимости от ширины экрана
     let scaleFactor = 0.95; // desktop по умолчанию
     const width = screenSize.width || 600;
-    if (width <= 640) {
-      scaleFactor = 1.15; // телефоны
+    if (width <= 470) {
+      scaleFactor = 1.15; // маленькие телефоны
+    } else if (width <= 520) {
+      scaleFactor = 1.05; // средние телефоны
+    } else if (width <= 640) {
+      scaleFactor = 0.95; // большие телефоны
     } else if (width <= 768) {
       scaleFactor = 0.92; // маленькие планшеты
     } else if (width <= 1024) {
@@ -653,8 +661,12 @@ const App = () => {
 
     // Адаптивный масштаб листьев для разных экранов
     let leafScale = 1;
-    if (width <= 640) {
-      leafScale = 1.21; // телефоны
+    if (width <= 470) {
+      leafScale = 1.21; // маленькие телефоны
+    } else if (width <= 520) {
+      leafScale = 1.1; // средние телефоны
+    } else if (width <= 640) {
+      leafScale = 1.0; // большие телефоны
     } else if (width <= 768) {
       leafScale = 0.97; // маленькие планшеты
     } else if (width <= 1024) {
@@ -718,8 +730,12 @@ const App = () => {
     // Адаптивный масштаб в зависимости от ширины экрана
     let scaleFactor = 0.95; // desktop по умолчанию
     const width = screenSize.width || 600;
-    if (width <= 640) {
-      scaleFactor = 1.15; // телефоны
+    if (width <= 470) {
+      scaleFactor = 1.15; // маленькие телефоны
+    } else if (width <= 520) {
+      scaleFactor = 1.05; // средние телефоны
+    } else if (width <= 640) {
+      scaleFactor = 0.95; // большие телефоны
     } else if (width <= 768) {
       scaleFactor = 0.92; // маленькие планшеты
     } else if (width <= 1024) {
