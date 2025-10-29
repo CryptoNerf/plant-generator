@@ -12,6 +12,7 @@ const App = () => {
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const [params, setParams] = useState({
     branches: 6,
     length: 80,
@@ -66,6 +67,7 @@ const App = () => {
         width: window.innerWidth,
         height: window.innerHeight
       });
+      setIsMobile(window.innerWidth <= 1024);
     }
   }, []);
 
@@ -373,9 +375,18 @@ const App = () => {
     if (level <= 0 || length < 3 || thickness < 0.5 || level > 8) return;
 
     const scale = Math.min(screenSize.width || 600, 600) / 600;
-    // Масштабируем до 0.95 для баланса между размером и обрезанием
-    length = Math.max(3, Math.min(length * scale * 0.95, 190));
-    thickness = Math.max(0.5, Math.min(thickness * scale * 0.95, 28.5));
+    // Адаптивный масштаб в зависимости от ширины экрана
+    let scaleFactor = 0.95; // desktop по умолчанию
+    const width = screenSize.width || 600;
+    if (width <= 640) {
+      scaleFactor = 1.15; // телефоны
+    } else if (width <= 768) {
+      scaleFactor = 0.92; // маленькие планшеты
+    } else if (width <= 1024) {
+      scaleFactor = 0.9; // большие планшеты/маленькие ноутбуки
+    }
+    length = Math.max(3, Math.min(length * scale * scaleFactor, 190));
+    thickness = Math.max(0.5, Math.min(thickness * scale * scaleFactor, 28.5));
     
     const endX = x + Math.cos(angle) * length;
     const endY = y + Math.sin(angle) * length;
@@ -599,10 +610,19 @@ const App = () => {
     if (!isFinite(centerX) || !isFinite(centerY)) return;
 
     const scale = Math.min(screenSize.width || 600, 600) / 600;
-    // Масштабируем до 0.95 для баланса
-    const stemLength = Math.max(30, Math.min(params.length * scale * 0.95, 237.5));
+    // Адаптивный масштаб в зависимости от ширины экрана
+    let scaleFactor = 0.95; // desktop по умолчанию
+    const width = screenSize.width || 600;
+    if (width <= 640) {
+      scaleFactor = 1.15; // телефоны
+    } else if (width <= 768) {
+      scaleFactor = 0.92; // маленькие планшеты
+    } else if (width <= 1024) {
+      scaleFactor = 0.9; // большие планшеты/маленькие ноутбуки
+    }
+    const stemLength = Math.max(30, Math.min(params.length * scale * scaleFactor, 237.5));
     const stemEndY = centerY - stemLength;
-    const stemThickness = Math.max(2, Math.min(params.thickness * scale * 0.95, 14.25));
+    const stemThickness = Math.max(2, Math.min(params.thickness * scale * scaleFactor, 14.25));
     
     let stemFillStyle = params.color;
     let svgStemStroke = params.color;
@@ -629,17 +649,27 @@ const App = () => {
     }
     
     const petals = Math.max(3, Math.min(params.branches, 15));
-    const petalOffset = params.leafSize * 1.5 * scale * 0.95;
-    
+    const petalOffset = params.leafSize * 1.5 * scale * scaleFactor;
+
+    // Адаптивный масштаб листьев для разных экранов
+    let leafScale = 1;
+    if (width <= 640) {
+      leafScale = 1.21; // телефоны
+    } else if (width <= 768) {
+      leafScale = 0.97; // маленькие планшеты
+    } else if (width <= 1024) {
+      leafScale = 0.95; // большие планшеты/маленькие ноутбуки
+    }
+
     for (let i = 0; i < petals; i++) {
       const angle = (i * Math.PI * 2) / petals;
       const petalX = centerX + Math.cos(angle) * petalOffset;
       const petalY = stemEndY + Math.sin(angle) * petalOffset;
       // ИСПРАВЛЕНО: правильная ориентация лепестков
-      drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale, angle + Math.PI/2);
+      drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale * leafScale, angle + Math.PI/2);
     }
-    
-    const centerRadius = Math.max(3, Math.min(params.centerSize * scale * 0.95, 23.75));
+
+    const centerRadius = Math.max(3, Math.min(params.centerSize * scale * scaleFactor, 23.75));
     let centerFillStyle = params.centerColor;
     let svgCenterFill = params.centerColor;
     let centerStrokeStyle = params.centerStrokeColor;
@@ -685,6 +715,16 @@ const App = () => {
 
     const branches = Math.max(4, Math.min(params.branches * 2, 16));
     const scale = Math.min(screenSize.width || 600, 600) / 600;
+    // Адаптивный масштаб в зависимости от ширины экрана
+    let scaleFactor = 0.95; // desktop по умолчанию
+    const width = screenSize.width || 600;
+    if (width <= 640) {
+      scaleFactor = 1.15; // телефоны
+    } else if (width <= 768) {
+      scaleFactor = 0.92; // маленькие планшеты
+    } else if (width <= 1024) {
+      scaleFactor = 0.9; // большие планшеты/маленькие ноутбуки
+    }
 
     for (let i = 0; i < branches; i++) {
       // Используем детерминированную генерацию на основе индекса ветки
@@ -692,9 +732,8 @@ const App = () => {
       const lengthRandom = seededRandom(i * 200 + 1, centerX + centerY);
 
       const angle = angleRandom * Math.PI * 2;
-      // Масштабируем до 0.95 для баланса
-      const length = Math.max(25, params.length * (0.5 + lengthRandom * 0.4) * scale * 0.95);
-      const thickness = Math.max(1, params.thickness * 0.6 * scale * 0.95);
+      const length = Math.max(25, params.length * (0.5 + lengthRandom * 0.4) * scale * scaleFactor);
+      const thickness = Math.max(1, params.thickness * 0.6 * scale * scaleFactor);
 
       drawTree(ctx, centerX, centerY, length, angle - Math.PI/2, thickness,
         Math.max(1, Math.min(params.levels, 4)), svgElements, svgDefs);
@@ -1528,6 +1567,63 @@ const App = () => {
         <aside className="parameters-sidebar">
           <h2 className="parameters-title">Параметры</h2>
 
+          {/* Мобильная панель выбора цвета - встроенная в начало параметров */}
+          {activeColorPicker && isMobile && (
+            <div className="mobile-color-picker-inline">
+              <h3 className="mobile-color-picker-title">Выбор цвета</h3>
+              <div className="mobile-color-swatches">
+                {[
+                  '#8B4513', '#A0522D', '#DEB887', '#CD853F', '#D2B48C', '#F4A460',
+                  '#228B22', '#32CD32', '#7CFC00', '#9ACD32', '#6B8E23', '#008000',
+                  '#FFD700', '#FFA500', '#FF6347', '#DC143C', '#8A2BE2', '#4B0082',
+                  '#800080', '#FF1493', '#1E90FF', '#00CED1', '#FF69B4', '#20B2AA'
+                ].map((color) => (
+                  <div
+                    key={color}
+                    className="mobile-color-swatch"
+                    style={{ background: color }}
+                    onClick={() => {
+                      handleParamChange(activeColorPicker, color);
+                      if (activeColorPicker.includes('leaf')) {
+                        handleParamChange('leafUseGradient', true);
+                      } else {
+                        handleParamChange('UseGradient', true);
+                      }
+                      setActiveColorPicker(null);
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="mobile-color-custom">
+                <label className="mobile-color-custom-label">Или выберите свой цвет:</label>
+                <input
+                  type="color"
+                  value={
+                    activeColorPicker === 'leafGradientStartColor' ? params.leafGradientStartColor :
+                    activeColorPicker === 'leafGradientEndColor' ? params.leafGradientEndColor :
+                    activeColorPicker === 'GradientEndColor' ? params.GradientEndColor :
+                    params.GradientStartColor
+                  }
+                  onChange={(e) => {
+                    handleParamChange(activeColorPicker, e.target.value);
+                    if (activeColorPicker.includes('leaf')) {
+                      handleParamChange('leafUseGradient', true);
+                    } else {
+                      handleParamChange('UseGradient', true);
+                    }
+                  }}
+                  className="mobile-color-input"
+                />
+              </div>
+              <button
+                onClick={() => setActiveColorPicker(null)}
+                className="mobile-color-close-btn"
+              >
+                Готово
+              </button>
+            </div>
+          )}
+
           {/* Выбор типа ствола */}
           <div className="trunk-type-selector">
             <label className="slider-label">Тип ствола:</label>
@@ -1669,8 +1765,8 @@ const App = () => {
             )}
           </div>
 
-          {/* PhotoshopPicker встроенный в панель */}
-          {activeColorPicker && (
+          {/* PhotoshopPicker встроенный в панель (только для десктопа) */}
+          {activeColorPicker && !isMobile && (
             <div className="photoshop-picker-wrapper">
               <PhotoshopPicker
                 color={
