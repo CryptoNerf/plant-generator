@@ -29,19 +29,47 @@ body {
   font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Bradley Hand', cursive;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Фон через псевдоэлемент для лучшей производительности на мобильных */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-image: url('/fone.png');
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center center;
-  background-attachment: fixed;
-  min-height: 100vh;
-  overflow-x: hidden;
+  z-index: -1;
 }
 
-/* Фикс для мобильных устройств - убираем fixed attachment */
+/* На мобильных делаем фон абсолютным вместо фиксированного */
 @media (max-width: 1024px) {
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+    /* Предотвращаем скачки при изменении высоты */
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
-    background-attachment: scroll;
+    min-height: 100%;
+  }
+
+  body::before {
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    /* Оптимизация производительности на мобильных */
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 }
 
@@ -49,6 +77,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 /* Main Container - 3 колонки */
@@ -119,6 +149,19 @@ body {
   width: 100%;
   max-width: 800px;
   position: relative;
+}
+
+/* Изоляция canvas на мобильных для предотвращения перерисовки всей страницы */
+@media (max-width: 1024px) {
+  .plant-canvas-wrapper {
+    contain: layout style paint;
+    will-change: contents;
+  }
+
+  .canvas-display {
+    will-change: contents;
+    transform: translateZ(0);
+  }
 }
 
 .generator-wrapper {
@@ -934,7 +977,7 @@ body {
     position: relative;
     z-index: 10;
     /* Предотвращаем скачки высоты при появлении панели выбора цвета */
-    will-change: height;
+    contain: layout style;
   }
 
   /* Убираем фиксированную высоту для чекбоксов */
@@ -1091,6 +1134,6 @@ body {
   }
 
   .plant-display-area {
-    padding: 15px;
+    padding: 0px;
   }
 }
