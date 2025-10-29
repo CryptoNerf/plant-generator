@@ -38,6 +38,13 @@ body {
   overflow-x: hidden;
 }
 
+/* Фикс для мобильных устройств - убираем fixed attachment */
+@media (max-width: 1024px) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
 .plant-generator {
   min-height: 100vh;
   display: flex;
@@ -926,6 +933,8 @@ body {
     margin-top: -20px;
     position: relative;
     z-index: 10;
+    /* Предотвращаем скачки высоты при появлении панели выбора цвета */
+    will-change: height;
   }
 
   /* Убираем фиксированную высоту для чекбоксов */
