@@ -112,7 +112,8 @@ const App = () => {
 
     switch (plantType) {
       case 'tree':
-        centerY = previewSize * 0.85;
+        // На компьютере дерево выше, на мобильных ниже
+        centerY = previewSize * (isMobile ? 0.85 : 0.80);
         break;
       case 'flower':
         centerY = previewSize * 0.75;
@@ -121,7 +122,7 @@ const App = () => {
         centerY = previewSize * 0.55;
         break;
       default:
-        centerY = previewSize * 0.85;
+        centerY = previewSize * (isMobile ? 0.85 : 0.80);
     }
 
     const tempSvgElements = [];
@@ -182,7 +183,8 @@ const App = () => {
 
     switch (plantType) {
       case 'tree':
-        centerY = canvasHeight * 0.85;
+        // На компьютере дерево выше, на мобильных ниже
+        centerY = canvasHeight * (isMobile ? 0.85 : 0.80);
         break;
       case 'flower':
         centerY = canvasHeight * 0.75;
@@ -191,7 +193,7 @@ const App = () => {
         centerY = canvasHeight * 0.55;
         break;
       default:
-        centerY = canvasHeight * 0.85;
+        centerY = canvasHeight * (isMobile ? 0.85 : 0.80);
     }
     
     const tempSvgElements = [];
@@ -434,7 +436,7 @@ const App = () => {
     const newLength = length * 0.75;
     const newThickness = Math.max(0.5, thickness * 0.7);
     const angleStep = params.angle * Math.PI / 180;
-    const maxBranches = Math.min(params.branches, 6);
+    const maxBranches = params.branches;
 
     for (let i = 0; i < maxBranches; i++) {
       // Используем детерминированную генерацию для углов веток
@@ -725,7 +727,7 @@ const App = () => {
   const drawBush = (ctx, centerX, centerY, svgElements, svgDefs) => {
     if (!isFinite(centerX) || !isFinite(centerY)) return;
 
-    const branches = Math.max(4, Math.min(params.branches * 2, 16));
+    const branches = Math.max(4, Math.min(params.branches * 2, 20));
     const scale = Math.min(screenSize.width || 600, 600) / 600;
     // Адаптивный масштаб в зависимости от ширины экрана
     let scaleFactor = 0.95; // desktop по умолчанию
@@ -1039,7 +1041,8 @@ const App = () => {
 
       switch (plantType) {
         case 'tree':
-          centerY = displayHeight * 0.85;
+          // На компьютере дерево выше, на мобильных ниже
+          centerY = displayHeight * (isMobile ? 0.85 : 0.80);
           break;
         case 'flower':
           centerY = displayHeight * 0.75;
@@ -1048,7 +1051,7 @@ const App = () => {
           centerY = displayHeight * 0.55;
           break;
         default:
-          centerY = displayHeight * 0.85;
+          centerY = displayHeight * (isMobile ? 0.85 : 0.80);
       }
 
       const tempSvgElements = [];
