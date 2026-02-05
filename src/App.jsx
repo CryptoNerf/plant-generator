@@ -52,6 +52,21 @@ const App = () => {
     centerUseStroke: false,
     centerStrokeColor: '#8B4513',
     centerStrokeWidth: 1,
+
+    // Параметры для травы
+    blades: 12,
+    curvature: 0.7,
+    spread: 60,
+    windDirection: 15,
+    grassType: 'regular', // 'regular', 'wheat', 'wild', 'fern', 'clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'
+
+    // Параметры цветов для трав
+    flowerSize: 12,
+    petalCount: 8,
+    flowerColor: '#FFFFFF',
+    flowerCenterColor: '#FFD700',
+    dandelionFluffy: false, // для одуванчика: false = желтый, true = пушистый
+    bellCount: 3, // количество колокольчиков
   });
 
   const [svgElements, setSvgElements] = useState([]);
@@ -121,6 +136,9 @@ const App = () => {
       case 'bush':
         centerY = previewSize * 0.55;
         break;
+      case 'grass':
+        centerY = previewSize * 0.75;
+        break;
       default:
         centerY = previewSize * (isMobile ? 0.85 : 0.80);
     }
@@ -142,6 +160,12 @@ const App = () => {
         const savedParams = { ...params };
         Object.assign(params, scaledParams);
         drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        Object.assign(params, savedParams);
+      } else if (plantType === 'grass') {
+        const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, spread: params.spread * 0.8 };
+        const savedParams = { ...params };
+        Object.assign(params, scaledParams);
+        drawGrass(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
         Object.assign(params, savedParams);
       }
     } catch (e) {
@@ -192,6 +216,9 @@ const App = () => {
       case 'bush':
         centerY = canvasHeight * 0.55;
         break;
+      case 'grass':
+        centerY = canvasHeight * 0.75;
+        break;
       default:
         centerY = canvasHeight * (isMobile ? 0.85 : 0.80);
     }
@@ -206,6 +233,8 @@ const App = () => {
         drawFlower(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
       } else if (plantType === 'bush') {
         drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+      } else if (plantType === 'grass') {
+        drawGrass(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
       }
     } catch (e) {
       console.error('Error generating plant:', e);
@@ -758,6 +787,1853 @@ const App = () => {
     }
   };
 
+  // Клевер - круглые пушистые цветы с тройными листочками
+  const drawGrassClover = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const blades = Math.max(3, Math.min(params.blades, 15));
+    const maxHeight = Math.max(60, Math.min(params.length * scale * scaleFactor, 250));
+    const spreadWidth = Math.max(20, Math.min(params.spread * scale * scaleFactor, 150));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+    const flowerSize = Math.max(8, Math.min(params.flowerSize * scale * scaleFactor, 25));
+
+    for (let i = 0; i < blades; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+      const thicknessRandom = seededRandom(i * 321, centerX + centerY + 300);
+
+      const stemHeight = maxHeight * (0.7 + heightRandom * 0.3);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const stemThickness = Math.max(0.8, Math.min(params.thickness * 0.25 * scale * scaleFactor, 2));
+
+      // Точка цветка
+      const flowerX = startX + Math.sin(windAngle) * stemHeight * 0.15;
+      const flowerY = startY - stemHeight;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `cloverStem_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, flowerX, flowerY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем стебель с поддержкой градиентов и обводки
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(flowerX, flowerY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = stemThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(flowerX, flowerY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = stemThickness;
+        ctx.stroke();
+      }
+
+      // SVG стебель
+      const svgLine = {
+        type: 'line',
+        x1: startX, y1: startY, x2: flowerX, y2: flowerY,
+        stroke: svgStroke,
+        strokeWidth: stemThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgLine.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgLine);
+
+      // Рисуем пушистый круглый цветок (множество маленьких кружков с вариацией размера)
+      const fluffCount = 20 + Math.floor(seededRandom(i * 789, centerX) * 15);
+
+      let flowerFill = params.flowerColor || '#FF69B4';
+      let svgFlowerFill = flowerFill;
+
+      for (let j = 0; j < fluffCount; j++) {
+        const angle = (j / fluffCount) * Math.PI * 2 + seededRandom(i * 111 + j, centerY) * 0.5;
+        const dist = seededRandom(i * 222 + j, centerX) * flowerSize * 0.9;
+        const fluffX = flowerX + Math.cos(angle) * dist;
+        const fluffY = flowerY + Math.sin(angle) * dist;
+        const fluffSize = (flowerSize / 8) * (0.8 + seededRandom(i * 333 + j, centerX) * 0.4); // Вариация размера
+
+        if (ctx) {
+          ctx.beginPath();
+          ctx.arc(fluffX, fluffY, fluffSize, 0, Math.PI * 2);
+          ctx.fillStyle = flowerFill;
+          ctx.fill();
+
+          if (params.UseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth * 0.3;
+            ctx.stroke();
+          }
+        }
+
+        const svgFluff = {
+          type: 'circle',
+          cx: fluffX, cy: fluffY, r: fluffSize,
+          fill: svgFlowerFill
+        };
+        if (params.UseStroke) {
+          svgFluff.stroke = params.StrokeColor;
+          svgFluff.strokeWidth = params.StrokeWidth * 0.3;
+        }
+        svgElements.push(svgFluff);
+      }
+
+      // Рисуем прикорневые листья клевера (1-2 листа у основания каждого стебля)
+      const leafSize = flowerSize * 0.5;
+      const leafCount = 1 + Math.floor(seededRandom(i * 888, centerX) * 2); // 1-2 листа
+      const leafStemLength = stemHeight * 0.2; // Короткие черешки
+
+      for (let k = 0; k < leafCount; k++) {
+        // Листья растут от основания стебля цветка
+        const leafBaseX = startX + (seededRandom(i * 111 + k, centerX) - 0.5) * flowerSize * 0.3;
+        const leafBaseY = startY;
+
+        const leafAngle = -Math.PI / 2 + (seededRandom(i * 222 + k, centerY) - 0.5) * 0.8;
+        const leafStemEndX = leafBaseX + Math.cos(leafAngle) * leafStemLength;
+        const leafStemEndY = leafBaseY + Math.sin(leafAngle) * leafStemLength;
+
+        // Черешок листа (длинный, от земли)
+        if (ctx) {
+          ctx.beginPath();
+          ctx.moveTo(leafBaseX, leafBaseY);
+          ctx.lineTo(leafStemEndX, leafStemEndY);
+          ctx.strokeStyle = params.color;
+          ctx.lineWidth = stemThickness * 0.4;
+          ctx.stroke();
+        }
+
+        svgElements.push({
+          type: 'line',
+          x1: leafBaseX, y1: leafBaseY, x2: leafStemEndX, y2: leafStemEndY,
+          stroke: params.color,
+          strokeWidth: stemThickness * 0.4
+        });
+
+        // Три доли на одном черешке (характерно для клевера)
+        for (let m = 0; m < 3; m++) {
+          const subAngle = leafAngle + (m - 1) * 0.35;
+          const subLeafX = leafStemEndX + Math.cos(subAngle) * leafSize * 0.6;
+          const subLeafY = leafStemEndY + Math.sin(subAngle) * leafSize * 0.4;
+
+          if (ctx) {
+            ctx.beginPath();
+            ctx.ellipse(subLeafX, subLeafY, leafSize * 0.5, leafSize * 0.7, subAngle, 0, Math.PI * 2);
+            ctx.fillStyle = params.leafColor || '#228B22';
+            ctx.fill();
+
+            if (params.leafUseStroke) {
+              ctx.strokeStyle = params.StrokeColor;
+              ctx.lineWidth = params.StrokeWidth * 0.5;
+              ctx.stroke();
+            }
+          }
+
+          const svgLeaf = {
+            type: 'ellipse',
+            cx: subLeafX, cy: subLeafY,
+            rx: leafSize * 0.5, ry: leafSize * 0.7,
+            fill: params.leafColor || '#228B22',
+            rotation: subAngle
+          };
+          if (params.leafUseStroke) {
+            svgLeaf.stroke = params.StrokeColor;
+            svgLeaf.strokeWidth = params.StrokeWidth * 0.5;
+          }
+          svgElements.push(svgLeaf);
+        }
+      }
+    }
+  };
+
+  // Одуванчик - желтый солнечный или пушистый белый
+  const drawGrassDandelion = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const flowerCount = Math.max(2, Math.min(params.blades, 15));
+    const maxHeight = Math.max(80, Math.min(params.length * scale * scaleFactor, 200));
+    const spreadWidth = Math.max(30, Math.min(params.spread * scale * scaleFactor, 120));
+    const flowerRadius = Math.max(8, Math.min(params.flowerSize * scale * scaleFactor, 25));
+    const isFluffy = params.dandelionFluffy;
+
+    for (let i = 0; i < flowerCount; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+
+      const stemHeight = maxHeight * (0.7 + heightRandom * 0.3);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const stemThickness = Math.max(1.5, Math.min(params.thickness * 0.5 * scale * scaleFactor, 4));
+
+      // Стебель (полый и тонкий) с учетом направления ветра
+      const windAngle = (params.windDirection * Math.PI) / 180;
+      const endX = startX + Math.sin(windAngle) * stemHeight * 0.15 + (seededRandom(i * 789, centerX) - 0.5) * 5;
+      const endY = startY - stemHeight;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `dandelionStem_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем стебель
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = stemThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = stemThickness;
+        ctx.stroke();
+      }
+
+      // SVG стебель
+      const svgLine = {
+        type: 'line',
+        x1: startX, y1: startY, x2: endX, y2: endY,
+        stroke: svgStroke,
+        strokeWidth: stemThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgLine.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgLine);
+
+      if (isFluffy) {
+        // Пушистый белый одуванчик - улучшенные "парашютики" с семечками
+        const seedCount = Math.floor(25 + seededRandom(i * 777, centerX) * 20);
+
+        for (let j = 0; j < seedCount; j++) {
+          const angle = (j / seedCount) * Math.PI * 2 + seededRandom(j * 333, i) * 0.4;
+          const distance = flowerRadius * (0.2 + seededRandom(j * 444, i) * 0.8);
+          const seedBaseX = endX + Math.cos(angle) * distance;
+          const seedBaseY = endY + Math.sin(angle) * distance;
+
+          // Тонкая ножка парашютика (изогнутая от ветра)
+          const stemLength = flowerRadius * (0.5 + seededRandom(j * 555, i) * 0.3);
+          const windBias = (seededRandom(j * 666, i) - 0.5) * 0.3;
+          const stemAngle = angle + windBias;
+          const stemEndX = seedBaseX + Math.cos(stemAngle) * stemLength;
+          const stemEndY = seedBaseY + Math.sin(stemAngle) * stemLength;
+
+          if (ctx) {
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.7)';
+            ctx.lineWidth = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(seedBaseX, seedBaseY);
+            ctx.lineTo(stemEndX, stemEndY);
+            ctx.stroke();
+
+            // Семечко у основания
+            ctx.fillStyle = '#8B7355';
+            ctx.beginPath();
+            ctx.ellipse(seedBaseX, seedBaseY, 0.8, 1.2, angle, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Парашют - более пушистый с большим количеством волосков
+            const umbrellaRays = 8 + Math.floor(seededRandom(j * 777, i) * 4);
+            const rayBaseLength = 2.5;
+
+            for (let k = 0; k < umbrellaRays; k++) {
+              const rayAngle = (k / umbrellaRays) * Math.PI * 2 + seededRandom(j * 888 + k, i) * 0.2;
+              const rayLength = rayBaseLength * (0.8 + seededRandom(j * 999 + k, i) * 0.4);
+              const rayEndX = stemEndX + Math.cos(rayAngle) * rayLength;
+              const rayEndY = stemEndY + Math.sin(rayAngle) * rayLength;
+
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+              ctx.lineWidth = 0.3;
+              ctx.beginPath();
+              ctx.moveTo(stemEndX, stemEndY);
+              ctx.lineTo(rayEndX, rayEndY);
+              ctx.stroke();
+
+              // Пушистые ворсинки на концах лучей
+              const fluffCount = 3;
+              for (let f = 0; f < fluffCount; f++) {
+                const fluffAngle = rayAngle + (f - 1) * 0.15;
+                const fluffLength = 0.8;
+                const fluffEndX = rayEndX + Math.cos(fluffAngle) * fluffLength;
+                const fluffEndY = rayEndY + Math.sin(fluffAngle) * fluffLength;
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 0.2;
+                ctx.beginPath();
+                ctx.moveTo(rayEndX, rayEndY);
+                ctx.lineTo(fluffEndX, fluffEndY);
+                ctx.stroke();
+              }
+            }
+          }
+
+          // SVG стебелек парашютика
+          svgElements.push({
+            type: 'line',
+            x1: seedBaseX, y1: seedBaseY, x2: stemEndX, y2: stemEndY,
+            stroke: 'rgba(200, 200, 200, 0.7)',
+            strokeWidth: 0.4
+          });
+
+          // SVG семечко
+          svgElements.push({
+            type: 'ellipse',
+            cx: seedBaseX, cy: seedBaseY,
+            rx: 0.8, ry: 1.2,
+            fill: '#8B7355',
+            rotation: angle
+          });
+
+          // SVG лучи парашюта
+          const umbrellaRays = 8 + Math.floor(seededRandom(j * 777, i) * 4);
+          const rayBaseLength = 2.5;
+
+          for (let k = 0; k < umbrellaRays; k++) {
+            const rayAngle = (k / umbrellaRays) * Math.PI * 2 + seededRandom(j * 888 + k, i) * 0.2;
+            const rayLength = rayBaseLength * (0.8 + seededRandom(j * 999 + k, i) * 0.4);
+            const rayEndX = stemEndX + Math.cos(rayAngle) * rayLength;
+            const rayEndY = stemEndY + Math.sin(rayAngle) * rayLength;
+
+            svgElements.push({
+              type: 'line',
+              x1: stemEndX, y1: stemEndY, x2: rayEndX, y2: rayEndY,
+              stroke: 'rgba(255, 255, 255, 0.6)',
+              strokeWidth: 0.3
+            });
+
+            // SVG пушистые ворсинки
+            const fluffCount = 3;
+            for (let f = 0; f < fluffCount; f++) {
+              const fluffAngle = rayAngle + (f - 1) * 0.15;
+              const fluffLength = 0.8;
+              const fluffEndX = rayEndX + Math.cos(fluffAngle) * fluffLength;
+              const fluffEndY = rayEndY + Math.sin(fluffAngle) * fluffLength;
+
+              svgElements.push({
+                type: 'line',
+                x1: rayEndX, y1: rayEndY, x2: fluffEndX, y2: fluffEndY,
+                stroke: 'rgba(255, 255, 255, 0.4)',
+                strokeWidth: 0.2
+              });
+            }
+          }
+        }
+      } else {
+        // Желтый солнечный одуванчик - множество тонких лепестков
+        const petalCount = Math.max(40, Math.min(params.petalCount * 5, 80));
+
+        let flowerFill = params.flowerColor || '#FFD700';
+        let svgFlowerFill = flowerFill;
+
+        // Рисуем лепестки
+        for (let j = 0; j < petalCount; j++) {
+          const angle = (j / petalCount) * Math.PI * 2 + seededRandom(j * 555, i) * 0.1;
+          const petalLength = flowerRadius * (0.8 + seededRandom(j * 666, i) * 0.4);
+          const petalWidth = flowerRadius * 0.15;
+
+          const petalX = endX + Math.cos(angle) * petalLength * 0.5;
+          const petalY = endY + Math.sin(angle) * petalLength * 0.5;
+          const petalEndX = endX + Math.cos(angle) * petalLength;
+          const petalEndY = endY + Math.sin(angle) * petalLength;
+
+          if (ctx) {
+            ctx.save();
+            ctx.translate(endX, endY);
+            ctx.rotate(angle);
+            ctx.fillStyle = flowerFill;
+            ctx.beginPath();
+            ctx.ellipse(petalLength * 0.5, 0, petalLength * 0.5, petalWidth, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (params.UseStroke) {
+              ctx.strokeStyle = params.StrokeColor;
+              ctx.lineWidth = params.StrokeWidth * 0.5;
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+
+          // SVG лепесток
+          const svgPetal = {
+            type: 'ellipse',
+            cx: endX + Math.cos(angle) * petalLength * 0.5,
+            cy: endY + Math.sin(angle) * petalLength * 0.5,
+            rx: petalLength * 0.5,
+            ry: petalWidth,
+            fill: svgFlowerFill,
+            rotation: angle
+          };
+          if (params.UseStroke) {
+            svgPetal.stroke = params.StrokeColor;
+            svgPetal.strokeWidth = params.StrokeWidth * 0.5;
+          }
+          svgElements.push(svgPetal);
+        }
+
+        // Центр цветка
+        const centerRadius = flowerRadius * 0.3;
+        let centerFill = params.flowerCenterColor || '#FFA500';
+
+        if (ctx) {
+          ctx.fillStyle = centerFill;
+          ctx.beginPath();
+          ctx.arc(endX, endY, centerRadius, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (params.UseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth;
+            ctx.stroke();
+          }
+        }
+
+        // SVG центр
+        const svgCenter = {
+          type: 'circle',
+          cx: endX, cy: endY,
+          r: centerRadius,
+          fill: centerFill
+        };
+        if (params.UseStroke) {
+          svgCenter.stroke = params.StrokeColor;
+          svgCenter.strokeWidth = params.StrokeWidth;
+        }
+        svgElements.push(svgCenter);
+      }
+
+      // Прикорневая розетка листьев одуванчика (2-3 листа у земли)
+      const leafCount = 2 + Math.floor(seededRandom(i * 777, centerX) * 2);
+      for (let k = 0; k < leafCount; k++) {
+        // Листья растут почти горизонтально от основания (прижаты к земле)
+        const leafAngle = (seededRandom(i * 111 + k, centerX) - 0.5) * Math.PI * 0.8 + Math.PI / 2;
+        const leafLength = flowerRadius * (1.2 + seededRandom(i * 222 + k, centerY) * 0.5);
+        const leafWidth = flowerRadius * 0.4;
+
+        const leafBaseX = startX;
+        const leafBaseY = startY;
+        const leafTipX = leafBaseX + Math.cos(leafAngle) * leafLength;
+        const leafTipY = leafBaseY + Math.sin(leafAngle) * leafLength * 0.3; // Почти горизонтально
+
+        // Зубчатый контур листа (характерно для одуванчика)
+        const serrations = 5;
+        const leafPath = [];
+
+        for (let j = 0; j <= serrations; j++) {
+          const t = j / serrations;
+          const x = leafBaseX + (leafTipX - leafBaseX) * t;
+          const y = leafBaseY + (leafTipY - leafBaseY) * t;
+          const perpAngle = leafAngle + Math.PI / 2;
+          const offset = Math.sin(t * Math.PI) * leafWidth * (j % 2 === 0 ? 1 : 0.5);
+
+          leafPath.push({
+            x: x + Math.cos(perpAngle) * offset,
+            y: y + Math.sin(perpAngle) * offset
+          });
+        }
+
+        if (ctx) {
+          ctx.fillStyle = params.leafColor || '#2D5016';
+          ctx.beginPath();
+          ctx.moveTo(leafPath[0].x, leafPath[0].y);
+          for (let j = 1; j < leafPath.length; j++) {
+            ctx.lineTo(leafPath[j].x, leafPath[j].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          if (params.leafUseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth;
+            ctx.stroke();
+          }
+        }
+
+        // SVG лист
+        let pathD = `M ${leafPath[0].x} ${leafPath[0].y}`;
+        for (let j = 1; j < leafPath.length; j++) {
+          pathD += ` L ${leafPath[j].x} ${leafPath[j].y}`;
+        }
+        pathD += ' Z';
+
+        const svgLeaf = {
+          type: 'path',
+          d: pathD,
+          fill: params.leafColor || '#2D5016'
+        };
+        if (params.leafUseStroke) {
+          svgLeaf.stroke = params.StrokeColor;
+          svgLeaf.strokeWidth = params.StrokeWidth;
+        }
+        svgElements.push(svgLeaf);
+      }
+    }
+  };
+
+  // Ромашка - белые лепестки с желтым центром
+  const drawGrassChamomile = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const flowerCount = Math.max(2, Math.min(params.blades, 15));
+    const maxHeight = Math.max(70, Math.min(params.length * scale * scaleFactor, 180));
+    const spreadWidth = Math.max(30, Math.min(params.spread * scale * scaleFactor, 120));
+    const flowerRadius = Math.max(10, Math.min(params.flowerSize * scale * scaleFactor, 20));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < flowerCount; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+
+      const stemHeight = maxHeight * (0.7 + heightRandom * 0.3);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const stemThickness = Math.max(1, Math.min(params.thickness * 0.4 * scale * scaleFactor, 3));
+
+      // Тонкий зеленый стебель с наклоном от ветра
+      const endX = startX + Math.sin(windAngle) * stemHeight * 0.15 + (seededRandom(i * 789, centerX) - 0.5) * 5;
+      const endY = startY - stemHeight;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `chamomileStem_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем стебель
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = stemThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = stemThickness;
+        ctx.stroke();
+      }
+
+      // SVG стебель
+      const svgLine = {
+        type: 'line',
+        x1: startX, y1: startY, x2: endX, y2: endY,
+        stroke: svgStroke,
+        strokeWidth: stemThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgLine.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgLine);
+
+      // Белые лепестки
+      const petalCount = Math.max(8, Math.min(params.petalCount, 16));
+      let petalColor = params.flowerColor || '#FFFFFF';
+
+      for (let j = 0; j < petalCount; j++) {
+        const angle = (j / petalCount) * Math.PI * 2;
+        const petalLength = flowerRadius * (1.0 + seededRandom(j * 888, i) * 0.2);
+        const petalWidth = flowerRadius * 0.25;
+
+        // Лепесток - вытянутый эллипс
+        const petalCenterX = endX + Math.cos(angle) * petalLength * 0.6;
+        const petalCenterY = endY + Math.sin(angle) * petalLength * 0.6;
+
+        if (ctx) {
+          ctx.save();
+          ctx.translate(petalCenterX, petalCenterY);
+          ctx.rotate(angle);
+          ctx.fillStyle = petalColor;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, petalLength * 0.5, petalWidth, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (params.UseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth * 0.5;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // SVG лепесток
+        const svgPetal = {
+          type: 'ellipse',
+          cx: petalCenterX, cy: petalCenterY,
+          rx: petalLength * 0.5, ry: petalWidth,
+          fill: petalColor,
+          rotation: angle
+        };
+        if (params.UseStroke) {
+          svgPetal.stroke = params.StrokeColor;
+          svgPetal.strokeWidth = params.StrokeWidth * 0.5;
+        }
+        svgElements.push(svgPetal);
+      }
+
+      // Желтый центр
+      const centerRadius = flowerRadius * 0.35;
+      let centerColor = params.flowerCenterColor || '#FFD700';
+
+      if (ctx) {
+        ctx.fillStyle = centerColor;
+        ctx.beginPath();
+        ctx.arc(endX, endY, centerRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Текстура центра (маленькие точки)
+        const dotCount = 12;
+        for (let d = 0; d < dotCount; d++) {
+          const dotAngle = (d / dotCount) * Math.PI * 2;
+          const dotDist = centerRadius * 0.4;
+          const dotX = endX + Math.cos(dotAngle) * dotDist;
+          const dotY = endY + Math.sin(dotAngle) * dotDist;
+
+          ctx.fillStyle = '#CC9900';
+          ctx.beginPath();
+          ctx.arc(dotX, dotY, 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (params.UseStroke) {
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = params.StrokeWidth;
+          ctx.beginPath();
+          ctx.arc(endX, endY, centerRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      // SVG центр
+      const svgCenter = {
+        type: 'circle',
+        cx: endX, cy: endY,
+        r: centerRadius,
+        fill: centerColor
+      };
+      if (params.UseStroke) {
+        svgCenter.stroke = params.StrokeColor;
+        svgCenter.strokeWidth = params.StrokeWidth;
+      }
+      svgElements.push(svgCenter);
+
+      // SVG текстура точек
+      const dotCount = 12;
+      for (let d = 0; d < dotCount; d++) {
+        const dotAngle = (d / dotCount) * Math.PI * 2;
+        const dotDist = centerRadius * 0.4;
+        const dotX = endX + Math.cos(dotAngle) * dotDist;
+        const dotY = endY + Math.sin(dotAngle) * dotDist;
+
+        svgElements.push({
+          type: 'circle',
+          cx: dotX, cy: dotY,
+          r: 0.8,
+          fill: '#CC9900'
+        });
+      }
+
+      // Перистые листья на стебле (2-3 пары)
+      const leafPairs = 2 + Math.floor(seededRandom(i * 888, centerX) * 2);
+      for (let j = 0; j < leafPairs; j++) {
+        const leafT = (j + 1) / (leafPairs + 1);
+        const leafX = startX + (endX - startX) * leafT;
+        const leafY = startY + (endY - startY) * leafT;
+        const leafSize = flowerRadius * (0.8 - leafT * 0.3);
+        const side = (j % 2 === 0) ? -1 : 1;
+
+        // Перистый лист с 3-4 сегментами
+        const segments = 3;
+        for (let s = 0; s < segments; s++) {
+          const segT = s / (segments - 1);
+          const segX = leafX + side * leafSize * 0.15;
+          const segY = leafY + (segT - 0.5) * leafSize * 0.8;
+          const segEndX = segX + side * leafSize * 0.4;
+          const segEndY = segY;
+
+          if (ctx) {
+            ctx.strokeStyle = params.leafColor || '#2D5016';
+            ctx.lineWidth = stemThickness * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(segX, segY);
+            ctx.lineTo(segEndX, segEndY);
+            ctx.stroke();
+
+            if (params.leafUseStroke) {
+              ctx.strokeStyle = params.StrokeColor;
+              ctx.lineWidth = params.StrokeWidth * 0.5;
+              ctx.stroke();
+            }
+          }
+
+          svgElements.push({
+            type: 'line',
+            x1: segX, y1: segY, x2: segEndX, y2: segEndY,
+            stroke: params.leafColor || '#2D5016',
+            strokeWidth: stemThickness * 0.3
+          });
+        }
+
+        // Центральная жилка листа
+        const mainVeinStartY = leafY - leafSize * 0.4;
+        const mainVeinEndY = leafY + leafSize * 0.4;
+
+        if (ctx) {
+          ctx.strokeStyle = params.leafColor || '#2D5016';
+          ctx.lineWidth = stemThickness * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(leafX + side * leafSize * 0.15, mainVeinStartY);
+          ctx.lineTo(leafX + side * leafSize * 0.15, mainVeinEndY);
+          ctx.stroke();
+        }
+
+        svgElements.push({
+          type: 'line',
+          x1: leafX + side * leafSize * 0.15, y1: mainVeinStartY,
+          x2: leafX + side * leafSize * 0.15, y2: mainVeinEndY,
+          stroke: params.leafColor || '#2D5016',
+          strokeWidth: stemThickness * 0.4
+        });
+      }
+    }
+  };
+
+  // Василек - синие рваные лепестки
+  const drawGrassCornflower = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const flowerCount = Math.max(2, Math.min(params.blades, 15));
+    const maxHeight = Math.max(80, Math.min(params.length * scale * scaleFactor, 200));
+    const spreadWidth = Math.max(30, Math.min(params.spread * scale * scaleFactor, 120));
+    const flowerRadius = Math.max(8, Math.min(params.flowerSize * scale * scaleFactor, 18));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < flowerCount; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+
+      const stemHeight = maxHeight * (0.75 + heightRandom * 0.25);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const stemThickness = Math.max(1, Math.min(params.thickness * 0.35 * scale * scaleFactor, 2.5));
+
+      // Тонкий стебель с наклоном от ветра
+      const endX = startX + Math.sin(windAngle) * stemHeight * 0.12;
+      const endY = startY - stemHeight;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `cornflowerStem_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем стебель
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = stemThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = stemThickness;
+        ctx.stroke();
+      }
+
+      // SVG стебель
+      const svgLine = {
+        type: 'line',
+        x1: startX, y1: startY, x2: endX, y2: endY,
+        stroke: svgStroke,
+        strokeWidth: stemThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgLine.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgLine);
+
+      // Рваные синие лепестки (внешний слой)
+      const outerPetalCount = Math.max(6, Math.min(params.petalCount, 12));
+      let petalColor = params.flowerColor || '#4169E1'; // Royal blue
+
+      for (let j = 0; j < outerPetalCount; j++) {
+        const angle = (j / outerPetalCount) * Math.PI * 2 + seededRandom(j * 999, i) * 0.2;
+        const petalLength = flowerRadius * (1.2 + seededRandom(j * 777, i) * 0.3);
+
+        // Рваный край лепестка (несколько зубцов)
+        const jagCount = 4;
+        const petalPath = [];
+
+        petalPath.push({ x: endX, y: endY }); // Центр
+
+        for (let k = 0; k <= jagCount; k++) {
+          const t = k / jagCount;
+          const subAngle = angle - 0.15 + t * 0.3;
+          const dist = petalLength * (0.7 + Math.sin(t * Math.PI) * 0.3) * (k % 2 === 0 ? 1 : 0.85);
+
+          petalPath.push({
+            x: endX + Math.cos(subAngle) * dist,
+            y: endY + Math.sin(subAngle) * dist
+          });
+        }
+
+        if (ctx) {
+          ctx.fillStyle = petalColor;
+          ctx.beginPath();
+          ctx.moveTo(petalPath[0].x, petalPath[0].y);
+          for (let p = 1; p < petalPath.length; p++) {
+            ctx.lineTo(petalPath[p].x, petalPath[p].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          if (params.UseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth * 0.5;
+            ctx.stroke();
+          }
+        }
+
+        // SVG лепесток
+        let pathD = `M ${petalPath[0].x} ${petalPath[0].y}`;
+        for (let p = 1; p < petalPath.length; p++) {
+          pathD += ` L ${petalPath[p].x} ${petalPath[p].y}`;
+        }
+        pathD += ' Z';
+
+        const svgPetal = {
+          type: 'path',
+          d: pathD,
+          fill: petalColor
+        };
+        if (params.UseStroke) {
+          svgPetal.stroke = params.StrokeColor;
+          svgPetal.strokeWidth = params.StrokeWidth * 0.5;
+        }
+        svgElements.push(svgPetal);
+      }
+
+      // Внутренние маленькие лепестки (темнее)
+      const innerPetalCount = Math.floor(outerPetalCount * 0.6);
+      const innerColor = params.flowerCenterColor || '#1E3A8A'; // Darker blue
+
+      for (let j = 0; j < innerPetalCount; j++) {
+        const angle = (j / innerPetalCount) * Math.PI * 2 + Math.PI / innerPetalCount;
+        const petalLength = flowerRadius * 0.5;
+        const petalWidth = flowerRadius * 0.2;
+
+        if (ctx) {
+          ctx.save();
+          ctx.translate(endX, endY);
+          ctx.rotate(angle);
+          ctx.fillStyle = innerColor;
+          ctx.beginPath();
+          ctx.ellipse(petalLength * 0.5, 0, petalLength * 0.5, petalWidth, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        svgElements.push({
+          type: 'ellipse',
+          cx: endX + Math.cos(angle) * petalLength * 0.5,
+          cy: endY + Math.sin(angle) * petalLength * 0.5,
+          rx: petalLength * 0.5,
+          ry: petalWidth,
+          fill: innerColor,
+          rotation: angle
+        });
+      }
+
+      // Центр цветка (темный)
+      const centerRadius = flowerRadius * 0.25;
+
+      if (ctx) {
+        ctx.fillStyle = '#2C1810';
+        ctx.beginPath();
+        ctx.arc(endX, endY, centerRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (params.UseStroke) {
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = params.StrokeWidth;
+          ctx.stroke();
+        }
+      }
+
+      svgElements.push({
+        type: 'circle',
+        cx: endX, cy: endY,
+        r: centerRadius,
+        fill: '#2C1810'
+      });
+
+      // Узкие ланцетные листья на стебле (2-3 пары)
+      const leafPairs = 2 + Math.floor(seededRandom(i * 888, centerX) * 2);
+      for (let j = 0; j < leafPairs; j++) {
+        const leafT = (j + 1) / (leafPairs + 1); // Позиция на стебле (0.25 - 0.75)
+        const leafX = startX + (endX - startX) * leafT;
+        const leafY = startY + (endY - startY) * leafT;
+
+        const leafLength = flowerRadius * (1.5 - leafT * 0.5); // Листья меньше к верху
+        const leafWidth = flowerRadius * 0.2;
+        const side = (j % 2 === 0) ? -1 : 1;
+        const leafAngle = side * (Math.PI / 2 - 0.3);
+
+        // Узкий ланцетный лист, направленный в сторону и вверх
+        const leafPath = [
+          { x: leafX, y: leafY },
+          { x: leafX + Math.cos(leafAngle) * leafWidth * 0.5, y: leafY - Math.sin(leafAngle) * leafWidth * 0.5 },
+          { x: leafX + Math.cos(leafAngle) * leafLength * 0.7, y: leafY - Math.sin(leafAngle) * leafLength * 0.7 - leafWidth },
+          { x: leafX + Math.cos(leafAngle) * leafLength, y: leafY - Math.sin(leafAngle) * leafLength },
+          { x: leafX + Math.cos(leafAngle) * leafLength * 0.7, y: leafY - Math.sin(leafAngle) * leafLength * 0.7 + leafWidth * 0.5 },
+          { x: leafX + Math.cos(leafAngle) * leafWidth * 0.3, y: leafY - Math.sin(leafAngle) * leafWidth * 0.3 }
+        ];
+
+        if (ctx) {
+          ctx.fillStyle = params.leafColor || '#2D5016';
+          ctx.beginPath();
+          ctx.moveTo(leafPath[0].x, leafPath[0].y);
+          for (let p = 1; p < leafPath.length; p++) {
+            ctx.lineTo(leafPath[p].x, leafPath[p].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          if (params.leafUseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth;
+            ctx.stroke();
+          }
+        }
+
+        let pathD = `M ${leafPath[0].x} ${leafPath[0].y}`;
+        for (let p = 1; p < leafPath.length; p++) {
+          pathD += ` L ${leafPath[p].x} ${leafPath[p].y}`;
+        }
+        pathD += ' Z';
+
+        const svgLeaf = {
+          type: 'path',
+          d: pathD,
+          fill: params.leafColor || '#2D5016'
+        };
+        if (params.leafUseStroke) {
+          svgLeaf.stroke = params.StrokeColor;
+          svgLeaf.strokeWidth = params.StrokeWidth;
+        }
+        svgElements.push(svgLeaf);
+      }
+    }
+  };
+
+  // Колокольчик - висячие колокольчатые цветы
+  const drawGrassBellflower = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const stemCount = Math.max(2, Math.min(params.blades, 15));
+    const maxHeight = Math.max(90, Math.min(params.length * scale * scaleFactor, 200));
+    const spreadWidth = Math.max(30, Math.min(params.spread * scale * scaleFactor, 120));
+    const bellSize = Math.max(8, Math.min(params.flowerSize * scale * scaleFactor, 16));
+    const bellsPerStem = Math.max(2, Math.min(params.bellCount, 5));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < stemCount; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+
+      const stemHeight = maxHeight * (0.8 + heightRandom * 0.2);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const stemThickness = Math.max(1.5, Math.min(params.thickness * 0.4 * scale * scaleFactor, 3));
+
+      // Изогнутый основной стебель с наклоном от ветра
+      const mainStemEndX = startX + Math.sin(windAngle) * stemHeight * 0.18 + (seededRandom(i * 789, centerX) - 0.5) * 8;
+      const mainStemEndY = startY - stemHeight;
+
+      const cp1X = startX + (mainStemEndX - startX) * 0.3;
+      const cp1Y = startY - stemHeight * 0.3;
+      const cp2X = startX + (mainStemEndX - startX) * 0.7;
+      const cp2Y = startY - stemHeight * 0.7;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `bellflowerStem_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, mainStemEndX, mainStemEndY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем основной стебель
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, mainStemEndX, mainStemEndY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = stemThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, mainStemEndX, mainStemEndY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = stemThickness;
+        ctx.stroke();
+      }
+
+      // SVG основной стебель
+      const svgPath = {
+        type: 'path',
+        d: `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${mainStemEndX} ${mainStemEndY}`,
+        stroke: svgStroke,
+        strokeWidth: stemThickness,
+        fill: 'none',
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgPath.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgPath);
+
+      // Рисуем колокольчики вдоль стебля
+      let bellColor = params.flowerColor || '#6B7FD7'; // Light purple-blue
+
+      for (let j = 0; j < bellsPerStem; j++) {
+        const t = (j + 1) / (bellsPerStem + 1);
+
+        // Вычисляем точку на кривой Безье
+        const bellAttachX = Math.pow(1 - t, 3) * startX +
+                           3 * Math.pow(1 - t, 2) * t * cp1X +
+                           3 * (1 - t) * Math.pow(t, 2) * cp2X +
+                           Math.pow(t, 3) * mainStemEndX;
+        const bellAttachY = Math.pow(1 - t, 3) * startY +
+                           3 * Math.pow(1 - t, 2) * t * cp1Y +
+                           3 * (1 - t) * Math.pow(t, 2) * cp2Y +
+                           Math.pow(t, 3) * mainStemEndY;
+
+        // Маленький стебелек к колокольчику
+        const bellStemLength = bellSize * 0.8;
+        const bellStemAngle = Math.PI / 2 + (seededRandom(i * 333 + j, centerX) - 0.5) * 0.4;
+        const bellTopX = bellAttachX + Math.cos(bellStemAngle) * bellStemLength;
+        const bellTopY = bellAttachY + Math.sin(bellStemAngle) * bellStemLength;
+
+        if (ctx) {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = stemThickness * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(bellAttachX, bellAttachY);
+          ctx.lineTo(bellTopX, bellTopY);
+          ctx.stroke();
+        }
+
+        svgElements.push({
+          type: 'line',
+          x1: bellAttachX, y1: bellAttachY, x2: bellTopX, y2: bellTopY,
+          stroke: svgStroke,
+          strokeWidth: stemThickness * 0.5
+        });
+
+        // Колокольчик (форма колокола)
+        const bellWidth = bellSize * 1.2;
+        const bellHeight = bellSize * 1.4;
+
+        // Создаем форму колокола с помощью кривых
+        const bellPath = [];
+
+        // Верх колокола (округлый)
+        const topRadius = bellWidth * 0.25;
+        bellPath.push({ x: bellTopX, y: bellTopY });
+
+        // Боковые стороны расширяются вниз
+        const leftTopY = bellTopY + topRadius;
+        const leftBottomX = bellTopX - bellWidth * 0.5;
+        const leftBottomY = bellTopY + bellHeight;
+        const rightBottomX = bellTopX + bellWidth * 0.5;
+
+        if (ctx) {
+          ctx.fillStyle = bellColor;
+          ctx.beginPath();
+          ctx.moveTo(bellTopX - topRadius, bellTopY);
+          ctx.quadraticCurveTo(bellTopX - topRadius, bellTopY - topRadius * 0.5, bellTopX, bellTopY - topRadius * 0.5);
+          ctx.quadraticCurveTo(bellTopX + topRadius, bellTopY - topRadius * 0.5, bellTopX + topRadius, bellTopY);
+          ctx.quadraticCurveTo(rightBottomX, leftTopY, rightBottomX, leftBottomY);
+          ctx.lineTo(leftBottomX, leftBottomY);
+          ctx.quadraticCurveTo(leftBottomX, leftTopY, bellTopX - topRadius, bellTopY);
+          ctx.closePath();
+          ctx.fill();
+
+          if (params.UseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth;
+            ctx.stroke();
+          }
+
+          // Зубчатый край снизу (5 зубцов)
+          const petalCount = 5;
+          for (let p = 0; p < petalCount; p++) {
+            const petalAngle = Math.PI + (p / petalCount - 0.5) * Math.PI;
+            const petalX = bellTopX + Math.cos(petalAngle) * bellWidth * 0.45;
+            const petalY = leftBottomY;
+            const petalTipX = petalX + Math.cos(Math.PI / 2) * bellHeight * 0.15;
+            const petalTipY = petalY + bellHeight * 0.15;
+
+            ctx.beginPath();
+            ctx.moveTo(bellTopX, leftBottomY);
+            ctx.lineTo(petalX, petalY);
+            ctx.lineTo(petalTipX, petalTipY);
+            ctx.fillStyle = bellColor;
+            ctx.fill();
+          }
+        }
+
+        // SVG колокольчик
+        const svgBellPath = `M ${bellTopX - topRadius} ${bellTopY}
+                            Q ${bellTopX - topRadius} ${bellTopY - topRadius * 0.5} ${bellTopX} ${bellTopY - topRadius * 0.5}
+                            Q ${bellTopX + topRadius} ${bellTopY - topRadius * 0.5} ${bellTopX + topRadius} ${bellTopY}
+                            Q ${rightBottomX} ${leftTopY} ${rightBottomX} ${leftBottomY}
+                            L ${leftBottomX} ${leftBottomY}
+                            Q ${leftBottomX} ${leftTopY} ${bellTopX - topRadius} ${bellTopY} Z`;
+
+        const svgBell = {
+          type: 'path',
+          d: svgBellPath,
+          fill: bellColor
+        };
+        if (params.UseStroke) {
+          svgBell.stroke = params.StrokeColor;
+          svgBell.strokeWidth = params.StrokeWidth;
+        }
+        svgElements.push(svgBell);
+
+        // SVG зубчатый край
+        const petalCount = 5;
+        for (let p = 0; p < petalCount; p++) {
+          const petalAngle = Math.PI + (p / petalCount - 0.5) * Math.PI;
+          const petalX = bellTopX + Math.cos(petalAngle) * bellWidth * 0.45;
+          const petalY = leftBottomY;
+          const petalTipX = petalX + Math.cos(Math.PI / 2) * bellHeight * 0.15;
+          const petalTipY = petalY + bellHeight * 0.15;
+
+          svgElements.push({
+            type: 'path',
+            d: `M ${bellTopX} ${leftBottomY} L ${petalX} ${petalY} L ${petalTipX} ${petalTipY} Z`,
+            fill: bellColor
+          });
+        }
+
+        // Тычинки внутри (маленькие линии)
+        const stamenCount = 3;
+        for (let s = 0; s < stamenCount; s++) {
+          const stamenAngle = Math.PI / 2 + (s / stamenCount - 0.5) * 0.6;
+          const stamenLength = bellHeight * 0.6;
+          const stamenX = bellTopX + Math.cos(stamenAngle) * stamenLength * 0.3;
+          const stamenY = bellTopY + bellHeight * 0.3;
+          const stamenEndX = stamenX;
+          const stamenEndY = stamenY + stamenLength;
+
+          if (ctx) {
+            ctx.strokeStyle = params.flowerCenterColor || '#FFD700';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(stamenX, stamenY);
+            ctx.lineTo(stamenEndX, stamenEndY);
+            ctx.stroke();
+
+            // Кончик тычинки
+            ctx.fillStyle = params.flowerCenterColor || '#FFD700';
+            ctx.beginPath();
+            ctx.arc(stamenEndX, stamenEndY, 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          svgElements.push({
+            type: 'line',
+            x1: stamenX, y1: stamenY, x2: stamenEndX, y2: stamenEndY,
+            stroke: params.flowerCenterColor || '#FFD700',
+            strokeWidth: 0.8
+          });
+
+          svgElements.push({
+            type: 'circle',
+            cx: stamenEndX, cy: stamenEndY,
+            r: 1,
+            fill: params.flowerCenterColor || '#FFD700'
+          });
+        }
+      }
+
+      // Листья на стебле колокольчика (2-3 пары)
+      const leafPairs = 2 + Math.floor(seededRandom(i * 999, centerX) * 2);
+      for (let k = 0; k < leafPairs; k++) {
+        const leafT = (k + 1) / (leafPairs + 2); // Позиция на стебле
+
+        // Интерполяция по кривой Безье для нахождения позиции листа
+        const leafX = Math.pow(1 - leafT, 3) * startX + 3 * Math.pow(1 - leafT, 2) * leafT * cp1X + 3 * (1 - leafT) * Math.pow(leafT, 2) * cp2X + Math.pow(leafT, 3) * mainStemEndX;
+        const leafY = Math.pow(1 - leafT, 3) * startY + 3 * Math.pow(1 - leafT, 2) * leafT * cp1Y + 3 * (1 - leafT) * Math.pow(leafT, 2) * cp2Y + Math.pow(leafT, 3) * mainStemEndY;
+
+        const leafLength = bellSize * (1.2 - leafT * 0.4); // Листья меньше к верху
+        const leafWidth = bellSize * (0.8 - leafT * 0.3);
+        const side = (k % 2 === 0) ? -1 : 1;
+
+        // Овальные листья с зубчатым краем
+        const segments = 6;
+        const leafPath = [];
+
+        // Создаем овальный лист с одной стороны
+        for (let j = 0; j <= segments; j++) {
+          const t = j / segments;
+          const angle = Math.PI * t;
+          const x = leafX + side * Math.cos(angle) * leafWidth;
+          const y = leafY - Math.sin(angle) * leafLength;
+          const zigzag = (j % 2 === 0) ? 1 : 0.9; // Маленькие зубчики
+
+          leafPath.push({
+            x: x * zigzag + leafX * (1 - zigzag),
+            y: y * zigzag + leafY * (1 - zigzag)
+          });
+        }
+
+        if (ctx) {
+          ctx.fillStyle = params.leafColor || '#2D5016';
+          ctx.beginPath();
+          ctx.moveTo(leafPath[0].x, leafPath[0].y);
+          for (let j = 1; j < leafPath.length; j++) {
+            ctx.lineTo(leafPath[j].x, leafPath[j].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          if (params.leafUseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth;
+            ctx.stroke();
+          }
+        }
+
+        // SVG лист
+        let pathD = `M ${leafPath[0].x} ${leafPath[0].y}`;
+        for (let j = 1; j < leafPath.length; j++) {
+          pathD += ` L ${leafPath[j].x} ${leafPath[j].y}`;
+        }
+        pathD += ' Z';
+
+        const svgLeaf = {
+          type: 'path',
+          d: pathD,
+          fill: params.leafColor || '#2D5016'
+        };
+        if (params.leafUseStroke) {
+          svgLeaf.stroke = params.StrokeColor;
+          svgLeaf.strokeWidth = params.StrokeWidth;
+        }
+        svgElements.push(svgLeaf);
+      }
+    }
+  };
+
+  // Обычная трава - улучшенные изогнутые травинки с конусообразностью
+  const drawGrassRegular = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const blades = Math.max(5, Math.min(params.blades, 30));
+    const maxHeight = Math.max(60, Math.min(params.length * scale * scaleFactor, 250));
+    const spreadWidth = Math.max(20, Math.min(params.spread * scale * scaleFactor, 150));
+    const curvature = Math.max(0.3, Math.min(params.curvature, 1.5));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < blades; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+      const curveRandom = seededRandom(i * 789, centerX + centerY + 200);
+      const thicknessRandom = seededRandom(i * 321, centerX + centerY + 300);
+
+      const bladeHeight = maxHeight * (0.7 + heightRandom * 0.3);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const baseThickness = Math.max(1, Math.min(params.thickness * 0.5 * scale * scaleFactor, 4)) * (0.8 + thicknessRandom * 0.2);
+      const tipThickness = baseThickness * 0.2; // Заостренный кончик
+
+      // Изогнутая травинка с квадратичной кривой
+      const ctrlX = startX + (curveRandom - 0.5) * bladeHeight * curvature + Math.sin(windAngle) * bladeHeight * 0.3;
+      const ctrlY = startY - bladeHeight * 0.6;
+      const endX = startX + Math.sin(windAngle) * bladeHeight * 0.4;
+      const endY = startY - bladeHeight;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `regularGrad_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем травинку с переменной толщиной (конусообразная)
+      if (ctx) {
+        ctx.lineCap = 'round';
+
+        // Рисуем как последовательность сегментов с убывающей толщиной
+        const segments = 15;
+        for (let s = 0; s < segments; s++) {
+          const t1 = s / segments;
+          const t2 = (s + 1) / segments;
+
+          // Точки на кривой Безье
+          const x1 = Math.pow(1 - t1, 2) * startX + 2 * (1 - t1) * t1 * ctrlX + Math.pow(t1, 2) * endX;
+          const y1 = Math.pow(1 - t1, 2) * startY + 2 * (1 - t1) * t1 * ctrlY + Math.pow(t1, 2) * endY;
+          const x2 = Math.pow(1 - t2, 2) * startX + 2 * (1 - t2) * t2 * ctrlX + Math.pow(t2, 2) * endX;
+          const y2 = Math.pow(1 - t2, 2) * startY + 2 * (1 - t2) * t2 * ctrlY + Math.pow(t2, 2) * endY;
+
+          // Толщина убывает к кончику
+          const thickness = baseThickness * (1 - t1 * 0.8) + tipThickness * t1 * 0.8;
+
+          if (params.UseStroke) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = thickness + 2 * params.StrokeWidth;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = thickness;
+          ctx.stroke();
+        }
+
+        // Центральная жилка (светлее)
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        ctx.strokeStyle = params.UseGradient ? params.GradientEndColor : lightenColor(params.color, 30);
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+
+      // SVG травинка (упрощенная версия)
+      const pathD = `M ${startX.toFixed(1)} ${startY.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`;
+      const svgPath = {
+        type: 'path',
+        d: pathD,
+        stroke: svgStroke,
+        fill: 'none',
+        strokeWidth: baseThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgPath.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgPath);
+
+      // SVG центральная жилка
+      svgElements.push({
+        type: 'path',
+        d: pathD,
+        stroke: params.UseGradient ? params.GradientEndColor : lightenColor(params.color, 30),
+        fill: 'none',
+        strokeWidth: 0.5,
+        strokeLinecap: 'round'
+      });
+    }
+  };
+
+  // Вспомогательная функция для осветления цвета
+  const lightenColor = (color, percent) => {
+    // Простое осветление для hex цветов
+    if (color.startsWith('#')) {
+      const num = parseInt(color.slice(1), 16);
+      const r = Math.min(255, ((num >> 16) & 0xFF) + percent);
+      const g = Math.min(255, ((num >> 8) & 0xFF) + percent);
+      const b = Math.min(255, (num & 0xFF) + percent);
+      return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+    }
+    return color;
+  };
+
+  // Пшеница - улучшенные стебли с детальными колосками и остями
+  const drawGrassWheat = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const blades = Math.max(5, Math.min(params.blades, 20));
+    const maxHeight = Math.max(60, Math.min(params.length * scale * scaleFactor, 250));
+    const spreadWidth = Math.max(20, Math.min(params.spread * scale * scaleFactor, 150));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < blades; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+      const thicknessRandom = seededRandom(i * 321, centerX + centerY + 300);
+
+      const bladeHeight = maxHeight * (0.75 + heightRandom * 0.25);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const baseThickness = Math.max(1, Math.min(params.thickness * 0.4 * scale * scaleFactor, 3)) * (0.8 + thicknessRandom * 0.2);
+
+      // Стебель с изгибом и наклоном от ветра
+      const curvature = Math.max(0.3, Math.min(params.curvature || 0.5, 1.5));
+      const curveRandom = seededRandom(i * 789, centerX + centerY + 200);
+      const endX = startX + Math.sin(windAngle) * bladeHeight * 0.2;
+      const endY = startY - bladeHeight;
+      const ctrlX = startX + (curveRandom - 0.5) * bladeHeight * curvature * 0.3 + Math.sin(windAngle) * bladeHeight * 0.15;
+      const ctrlY = startY - bladeHeight * 0.6;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `wheatGrad_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем стебель с изгибом
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = baseThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = baseThickness;
+        ctx.stroke();
+      }
+
+      // SVG стебель
+      const pathD = `M ${startX.toFixed(1)} ${startY.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`;
+      const svgPath = {
+        type: 'path',
+        d: pathD,
+        stroke: svgStroke,
+        fill: 'none',
+        strokeWidth: baseThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgPath.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgPath);
+
+      // Рисуем улучшенный колосок с зернами и остями
+      const grainCount = 6 + Math.floor(seededRandom(i * 987, centerX + centerY) * 4);
+      const grainSize = baseThickness * 1.8;
+      const grainSpacing = bladeHeight * 0.10;
+      const grainColor = params.leafColor || '#D4A574';
+
+      for (let j = 0; j < grainCount; j++) {
+        const grainY = endY + j * grainSpacing;
+        const side = j % 2 === 0 ? 1 : -1;
+        const grainX = endX + side * grainSize * 0.7;
+        const grainAngle = seededRandom(i * 222 + j, centerY) * Math.PI * 0.15 + side * 0.2;
+
+        // Зерно (более детальное)
+        if (ctx) {
+          ctx.save();
+          ctx.translate(grainX, grainY);
+          ctx.rotate(grainAngle);
+
+          // Основное зерно
+          ctx.fillStyle = grainColor;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, grainSize * 0.5, grainSize * 0.9, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (params.leafUseStroke) {
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = params.StrokeWidth * 0.5;
+            ctx.stroke();
+          }
+
+          // Бороздка на зерне
+          ctx.strokeStyle = darkenColor(grainColor, 20);
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -grainSize * 0.7);
+          ctx.lineTo(0, grainSize * 0.7);
+          ctx.stroke();
+
+          // Ость (усик) от зерна
+          const awnLength = grainSize * (2 + seededRandom(i * 333 + j, centerX) * 1.5);
+          const awnAngle = seededRandom(i * 444 + j, centerY) * 0.3 - 0.15;
+
+          ctx.strokeStyle = 'rgba(180, 160, 120, 0.6)';
+          ctx.lineWidth = 0.4;
+          ctx.beginPath();
+          ctx.moveTo(0, -grainSize * 0.8);
+          ctx.lineTo(Math.sin(awnAngle) * awnLength, -grainSize * 0.8 - Math.cos(awnAngle) * awnLength);
+          ctx.stroke();
+
+          ctx.restore();
+        }
+
+        // SVG зерно
+        const svgGrain = {
+          type: 'ellipse',
+          cx: grainX, cy: grainY,
+          rx: grainSize * 0.5, ry: grainSize * 0.9,
+          fill: grainColor,
+          rotation: grainAngle
+        };
+        if (params.leafUseStroke) {
+          svgGrain.stroke = params.StrokeColor;
+          svgGrain.strokeWidth = params.StrokeWidth * 0.5;
+        }
+        svgElements.push(svgGrain);
+
+        // SVG бороздка
+        const cos = Math.cos(grainAngle);
+        const sin = Math.sin(grainAngle);
+        const groove1X = grainX + sin * (-grainSize * 0.7);
+        const groove1Y = grainY - cos * (-grainSize * 0.7);
+        const groove2X = grainX + sin * (grainSize * 0.7);
+        const groove2Y = grainY - cos * (grainSize * 0.7);
+
+        svgElements.push({
+          type: 'line',
+          x1: groove1X, y1: groove1Y,
+          x2: groove2X, y2: groove2Y,
+          stroke: darkenColor(grainColor, 20),
+          strokeWidth: 0.5
+        });
+
+        // SVG ость
+        const awnLength = grainSize * (2 + seededRandom(i * 333 + j, centerX) * 1.5);
+        const awnAngle = seededRandom(i * 444 + j, centerY) * 0.3 - 0.15;
+        const awnBaseX = grainX + sin * (-grainSize * 0.8);
+        const awnBaseY = grainY - cos * (-grainSize * 0.8);
+        const totalAngle = grainAngle + awnAngle;
+        const awnEndX = awnBaseX + Math.sin(totalAngle) * awnLength;
+        const awnEndY = awnBaseY - Math.cos(totalAngle) * awnLength;
+
+        svgElements.push({
+          type: 'line',
+          x1: awnBaseX, y1: awnBaseY,
+          x2: awnEndX, y2: awnEndY,
+          stroke: 'rgba(180, 160, 120, 0.6)',
+          strokeWidth: 0.4
+        });
+      }
+    }
+  };
+
+  // Вспомогательная функция для затемнения цвета
+  const darkenColor = (color, percent) => {
+    if (color.startsWith('#')) {
+      const num = parseInt(color.slice(1), 16);
+      const r = Math.max(0, ((num >> 16) & 0xFF) - percent);
+      const g = Math.max(0, ((num >> 8) & 0xFF) - percent);
+      const b = Math.max(0, (num & 0xFF) - percent);
+      return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+    }
+    return color;
+  };
+
+  // Дикая трава - очень изогнутая и хаотичная
+  const drawGrassWild = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const blades = Math.max(5, Math.min(params.blades, 20));
+    const maxHeight = Math.max(60, Math.min(params.length * scale * scaleFactor, 250));
+    const spreadWidth = Math.max(20, Math.min(params.spread * scale * scaleFactor, 150));
+    const curvature = Math.max(0.5, Math.min(params.curvature * 2, 2.5)); // Увеличенный изгиб
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < blades; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+      const curveRandom1 = seededRandom(i * 789, centerX + centerY + 200);
+      const curveRandom2 = seededRandom(i * 654, centerX + centerY + 300);
+      const thicknessRandom = seededRandom(i * 321, centerX + centerY + 400);
+
+      const bladeHeight = maxHeight * (0.6 + heightRandom * 0.4);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const baseThickness = Math.max(1, Math.min(params.thickness * 0.45 * scale * scaleFactor, 3.5)) * (0.7 + thicknessRandom * 0.3);
+
+      // Двойной изгиб для S-образной кривой
+      const midY = startY - bladeHeight * 0.5;
+      const midX = startX + (curveRandom1 - 0.5) * bladeHeight * curvature;
+      const endY = startY - bladeHeight;
+      const endX = startX + Math.sin(windAngle) * bladeHeight * 0.6 + (curveRandom2 - 0.5) * bladeHeight * curvature * 0.5;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `wildGrad_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем wild траву с bezier curve
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.bezierCurveTo(midX, midY, midX, midY - bladeHeight * 0.2, endX, endY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = baseThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(midX, midY, midX, midY - bladeHeight * 0.2, endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = baseThickness;
+        ctx.stroke();
+      }
+
+      // SVG с cubic bezier
+      const pathD = `M ${startX.toFixed(1)} ${startY.toFixed(1)} C ${midX.toFixed(1)} ${midY.toFixed(1)}, ${midX.toFixed(1)} ${(midY - bladeHeight * 0.2).toFixed(1)}, ${endX.toFixed(1)} ${endY.toFixed(1)}`;
+      const svgPath = {
+        type: 'path',
+        d: pathD,
+        stroke: svgStroke,
+        fill: 'none',
+        strokeWidth: baseThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgPath.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgPath);
+    }
+  };
+
+  // Папоротник - стебель с боковыми листочками
+  const drawGrassFern = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor) => {
+    const blades = Math.max(5, Math.min(params.blades, 20));
+    const maxHeight = Math.max(60, Math.min(params.length * scale * scaleFactor, 250));
+    const spreadWidth = Math.max(20, Math.min(params.spread * scale * scaleFactor, 150));
+    const windAngle = (params.windDirection * Math.PI) / 180;
+
+    for (let i = 0; i < blades; i++) {
+      const heightRandom = seededRandom(i * 123, centerX + centerY);
+      const posRandom = seededRandom(i * 456, centerX + centerY + 100);
+      const thicknessRandom = seededRandom(i * 321, centerX + centerY + 300);
+
+      const bladeHeight = maxHeight * (0.7 + heightRandom * 0.3);
+      const xOffset = (posRandom - 0.5) * spreadWidth;
+      const startX = centerX + xOffset;
+      const startY = centerY;
+      const baseThickness = Math.max(1, Math.min(params.thickness * 0.35 * scale * scaleFactor, 2.5)) * (0.8 + thicknessRandom * 0.2);
+
+      // Слегка изогнутый стебель с учетом параметра curvature
+      const curvature = Math.max(0.3, Math.min(params.curvature || 0.5, 1.5));
+      const curveRandom = seededRandom(i * 789, centerX + centerY + 200);
+      const endX = startX + Math.sin(windAngle) * bladeHeight * 0.2;
+      const endY = startY - bladeHeight;
+      const ctrlX = startX + (curveRandom - 0.5) * bladeHeight * curvature * 0.25 + Math.sin(windAngle) * bladeHeight * 0.15;
+      const ctrlY = startY - bladeHeight * 0.5;
+
+      let strokeStyle = params.color;
+      let svgStroke = params.color;
+
+      if (params.UseGradient) {
+        const gradientId = `fernGrad_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const grad = createGradient(ctx, startX, startY, endX, endY, params.GradientStartColor, params.GradientEndColor, gradientId, svgDefs);
+        strokeStyle = grad.canvasStyle;
+        svgStroke = grad.svgStyle;
+      }
+
+      // Рисуем главный стебель
+      if (ctx) {
+        ctx.lineCap = 'round';
+        if (params.UseStroke) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+          ctx.strokeStyle = params.StrokeColor;
+          ctx.lineWidth = baseThickness + 2 * params.StrokeWidth;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = baseThickness;
+        ctx.stroke();
+      }
+
+      // SVG главный стебель
+      const mainPathD = `M ${startX.toFixed(1)} ${startY.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`;
+      const svgMainPath = {
+        type: 'path',
+        d: mainPathD,
+        stroke: svgStroke,
+        fill: 'none',
+        strokeWidth: baseThickness,
+        strokeLinecap: 'round'
+      };
+      if (params.UseStroke) {
+        svgMainPath.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+      }
+      svgElements.push(svgMainPath);
+
+      // Добавляем боковые листочки
+      const leafCount = 6 + Math.floor(seededRandom(i * 555, centerX + centerY) * 4);
+      const leafSize = baseThickness * 3;
+
+      for (let j = 1; j < leafCount; j++) {
+        const leafT = j / leafCount;
+        // Интерполяция по квадратичной кривой
+        const leafPosX = (1 - leafT) * (1 - leafT) * startX + 2 * (1 - leafT) * leafT * ctrlX + leafT * leafT * endX;
+        const leafPosY = (1 - leafT) * (1 - leafT) * startY + 2 * (1 - leafT) * leafT * ctrlY + leafT * leafT * endY;
+
+        const side = j % 2 === 0 ? 1 : -1;
+        const leafAngle = Math.atan2(endY - startY, endX - startX) + Math.PI / 2 * side + (seededRandom(i * 777 + j, centerX) - 0.5) * 0.3;
+        const leafLength = leafSize * (1 - leafT * 0.3); // Листочки меньше к вершине
+
+        const leafEndX = leafPosX + Math.cos(leafAngle) * leafLength;
+        const leafEndY = leafPosY + Math.sin(leafAngle) * leafLength;
+
+        if (ctx) {
+          ctx.lineCap = 'round';
+          if (params.leafUseStroke) {
+            ctx.beginPath();
+            ctx.moveTo(leafPosX, leafPosY);
+            ctx.lineTo(leafEndX, leafEndY);
+            ctx.strokeStyle = params.StrokeColor;
+            ctx.lineWidth = baseThickness * 0.6 + 2 * params.StrokeWidth;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.moveTo(leafPosX, leafPosY);
+          ctx.lineTo(leafEndX, leafEndY);
+          ctx.strokeStyle = params.leafColor || params.color;
+          ctx.lineWidth = baseThickness * 0.6;
+          ctx.stroke();
+        }
+
+        // SVG листочки
+        const svgLeafLine = {
+          type: 'line',
+          x1: leafPosX, y1: leafPosY, x2: leafEndX, y2: leafEndY,
+          stroke: params.leafColor || params.color,
+          strokeWidth: baseThickness * 0.6,
+          strokeLinecap: 'round'
+        };
+        if (params.leafUseStroke) {
+          svgLeafLine.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+        }
+        svgElements.push(svgLeafLine);
+      }
+    }
+  };
+
+  // Главная функция drawGrass - роутер для разных типов
+  const drawGrass = (ctx, centerX, centerY, svgElements, svgDefs) => {
+    if (!isFinite(centerX) || !isFinite(centerY)) return;
+
+    const scale = Math.min(screenSize.width || 600, 600) / 600;
+    let scaleFactor = 0.95;
+    const width = screenSize.width || 600;
+    if (width <= 470) {
+      scaleFactor = 1.15;
+    } else if (width <= 520) {
+      scaleFactor = 1.05;
+    } else if (width <= 640) {
+      scaleFactor = 0.95;
+    } else if (width <= 768) {
+      scaleFactor = 0.92;
+    } else if (width <= 1024) {
+      scaleFactor = 0.9;
+    }
+
+    // Вызываем соответствующую функцию в зависимости от типа травы/цветка
+    switch (params.grassType) {
+      case 'regular':
+        drawGrassRegular(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'wheat':
+        drawGrassWheat(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'wild':
+        drawGrassWild(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'fern':
+        drawGrassFern(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'clover':
+        drawGrassClover(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'dandelion':
+        drawGrassDandelion(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'chamomile':
+        drawGrassChamomile(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'cornflower':
+        drawGrassCornflower(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      case 'bellflower':
+        drawGrassBellflower(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+      default:
+        drawGrassRegular(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
+        break;
+    }
+  };
+
   const handleParamChange = (param, value) => {
     setParams(prev => ({ ...prev, [param]: value }));
   };
@@ -824,6 +2700,28 @@ const App = () => {
           color: trunkColor,
           leafColor: leafColor1,
           centerColor: getRandomColor()
+        };
+        break;
+      case 'grass':
+        const grassTypes = ['regular', 'wheat', 'wild', 'fern', 'clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'];
+        const randomGrassType = grassTypes[Math.floor(Math.random() * grassTypes.length)];
+        newParams = {
+          ...newParams,
+          blades: randomBetween(3, 15),
+          length: randomBetween(60, 200),
+          thickness: randomBetween(2, 8),
+          curvature: randomBetween(2, 15, 1) / 10,
+          spread: randomBetween(20, 100),
+          windDirection: randomBetween(-45, 45),
+          grassType: randomGrassType,
+          flowerSize: randomBetween(8, 20),
+          petalCount: randomBetween(6, 12),
+          flowerColor: leafColor1,
+          flowerCenterColor: getRandomColor(),
+          dandelionFluffy: Math.random() < 0.5,
+          bellCount: randomBetween(2, 5),
+          color: trunkColor,
+          leafColor: getRandomColor()
         };
         break;
     }
@@ -1050,6 +2948,9 @@ const App = () => {
         case 'bush':
           centerY = displayHeight * 0.55;
           break;
+        case 'grass':
+          centerY = displayHeight * 0.75;
+          break;
         default:
           centerY = displayHeight * (isMobile ? 0.85 : 0.80);
       }
@@ -1064,6 +2965,8 @@ const App = () => {
           drawFlower(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
         } else if (plantType === 'bush') {
           drawBush(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        } else if (plantType === 'grass') {
+          drawGrass(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
         }
       } catch (e) {
         console.error('Error generating high-res plant:', e);
@@ -1440,6 +3343,187 @@ const App = () => {
             </div>
           </>
         );
+      case 'grass':
+        const isFlower = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
+
+        return (
+          <>
+            <div className="slider-group">
+              <label className="slider-label">
+                Количество: {params.blades}
+              </label>
+              <input
+                type="range"
+                min="2"
+                max={isFlower ? 15 : 30}
+                value={params.blades}
+                onChange={(e) => handleParamChange('blades', parseInt(e.target.value))}
+                className="slider"
+              />
+            </div>
+            <div className="slider-group">
+              <label className="slider-label">
+                Высота: {params.length}
+              </label>
+              <input
+                type="range"
+                min="60"
+                max="250"
+                value={params.length}
+                onChange={(e) => handleParamChange('length', parseInt(e.target.value))}
+                className="slider"
+              />
+            </div>
+            <div className="slider-group">
+              <label className="slider-label">
+                Толщина стебля: {params.thickness}
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={params.thickness}
+                onChange={(e) => handleParamChange('thickness', parseInt(e.target.value))}
+                className="slider"
+              />
+            </div>
+
+            {/* Ползунки для обычной травы, пшеницы и папоротника */}
+            {!isFlower && (
+              <div className="slider-group">
+                <label className="slider-label">
+                  Изгиб: {params.curvature.toFixed(1)}
+                </label>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="2.5"
+                  step="0.1"
+                  value={params.curvature}
+                  onChange={(e) => handleParamChange('curvature', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+            )}
+
+            <div className="slider-group">
+              <label className="slider-label">
+                Разброс: {params.spread}
+              </label>
+              <input
+                type="range"
+                min="20"
+                max="150"
+                value={params.spread}
+                onChange={(e) => handleParamChange('spread', parseInt(e.target.value))}
+                className="slider"
+              />
+            </div>
+            <div className="slider-group">
+              <label className="slider-label">
+                Направление ветра: {params.windDirection}°
+              </label>
+              <input
+                type="range"
+                min="-45"
+                max="45"
+                value={params.windDirection}
+                onChange={(e) => handleParamChange('windDirection', parseInt(e.target.value))}
+                className="slider"
+              />
+            </div>
+
+            {/* Ползунки специфичные для цветов */}
+            {isFlower && (
+              <>
+                <div className="slider-group">
+                  <label className="slider-label">
+                    Размер цветка: {params.flowerSize}
+                  </label>
+                  <input
+                    type="range"
+                    min="6"
+                    max="30"
+                    value={params.flowerSize}
+                    onChange={(e) => handleParamChange('flowerSize', parseInt(e.target.value))}
+                    className="slider"
+                  />
+                </div>
+
+                {(params.grassType === 'dandelion' || params.grassType === 'chamomile' || params.grassType === 'cornflower') && (
+                  <div className="slider-group">
+                    <label className="slider-label">
+                      Количество лепестков: {params.petalCount}
+                    </label>
+                    <input
+                      type="range"
+                      min="4"
+                      max="16"
+                      value={params.petalCount}
+                      onChange={(e) => handleParamChange('petalCount', parseInt(e.target.value))}
+                      className="slider"
+                    />
+                  </div>
+                )}
+
+                {params.grassType === 'dandelion' && (
+                  <div className="slider-group">
+                    <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span>Пушистый одуванчик</span>
+                      <input
+                        type="checkbox"
+                        checked={params.dandelionFluffy}
+                        onChange={(e) => handleParamChange('dandelionFluffy', e.target.checked)}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {params.grassType === 'bellflower' && (
+                  <div className="slider-group">
+                    <label className="slider-label">
+                      Колокольчиков на стебле: {params.bellCount}
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="6"
+                      value={params.bellCount}
+                      onChange={(e) => handleParamChange('bellCount', parseInt(e.target.value))}
+                      className="slider"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Чекбоксы для обводки - доступны для всех типов травы */}
+            <div className="slider-group">
+              <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>Обводка стебля</span>
+                <input
+                  type="checkbox"
+                  checked={params.UseStroke}
+                  onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                />
+              </label>
+            </div>
+
+            <div className="slider-group">
+              <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>Обводка листвы</span>
+                <input
+                  type="checkbox"
+                  checked={params.leafUseStroke}
+                  onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                />
+              </label>
+            </div>
+          </>
+        );
       default:
         return null;
     }
@@ -1468,6 +3552,12 @@ const App = () => {
           >
             <img src="/assets/preset-bush.png" alt="Bush" />
           </div>
+          <div
+            className={`preset-item ${plantType === 'grass' ? 'active' : ''}`}
+            onClick={() => setPlantType('grass')}
+          >
+            <img src="/assets/preset-grass.png" alt="Grass" />
+          </div>
         </aside>
 
         {/* Центральная область с растением */}
@@ -1480,73 +3570,153 @@ const App = () => {
 
               {/* Цветные кружки */}
               <div className="color-picker-circles">
-                <div
-                  className="color-circle-wrapper color-circle-1"
-                  style={{
-                    position: 'absolute',
-                    left: '41.7%',
-                    top: '4.18%',
-                    width: '3.65%',
-                    aspectRatio: '1',
-                  }}
-                >
-                  <div
-                    className="color-circle"
-                    style={{ background: params.leafGradientStartColor }}
-                    onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
-                  />
-                </div>
+                {plantType === 'grass' ? (
+                  <>
+                    {/* Для травы/цветов - другие параметры */}
+                    <div
+                      className="color-circle-wrapper color-circle-1"
+                      style={{
+                        position: 'absolute',
+                        left: '41.7%',
+                        top: '4.18%',
+                        width: '3.65%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.leafColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'leafColor' ? null : 'leafColor')}
+                        title="Цвет листьев"
+                      />
+                    </div>
 
-                <div
-                  className="color-circle-wrapper color-circle-2"
-                  style={{
-                    position: 'absolute',
-                    left: '52.1%',
-                    top: '8%',
-                    width: '10.4%',
-                    aspectRatio: '1',
-                  }}
-                >
-                  <div
-                    className="color-circle"
-                    style={{ background: params.leafGradientEndColor }}
-                    onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientEndColor' ? null : 'leafGradientEndColor')}
-                  />
-                </div>
+                    <div
+                      className="color-circle-wrapper color-circle-2"
+                      style={{
+                        position: 'absolute',
+                        left: '52.1%',
+                        top: '8%',
+                        width: '10.4%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.flowerColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'flowerColor' ? null : 'flowerColor')}
+                        title="Цвет цветка"
+                      />
+                    </div>
 
-                <div
-                  className="color-circle-wrapper color-circle-3"
-                  style={{
-                    position: 'absolute',
-                    left: '68.45%',
-                    top: '82.9%',
-                    width: '8.1%',
-                    aspectRatio: '1',
-                  }}
-                >
-                  <div
-                    className="color-circle"
-                    style={{ background: params.GradientEndColor }}
-                    onClick={() => setActiveColorPicker(activeColorPicker === 'GradientEndColor' ? null : 'GradientEndColor')}
-                  />
-                </div>
+                    <div
+                      className="color-circle-wrapper color-circle-3"
+                      style={{
+                        position: 'absolute',
+                        left: '68.45%',
+                        top: '82.9%',
+                        width: '8.1%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.flowerCenterColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'flowerCenterColor' ? null : 'flowerCenterColor')}
+                        title="Цвет центра цветка"
+                      />
+                    </div>
 
-                <div
-                  className="color-circle-wrapper color-circle-4"
-                  style={{
-                    position: 'absolute',
-                    left: '80.14%',
-                    top: '93.5%',
-                    width: '2.8%',
-                    aspectRatio: '1',
-                  }}
-                >
-                  <div
-                    className="color-circle"
-                    style={{ background: params.GradientStartColor }}
-                    onClick={() => setActiveColorPicker(activeColorPicker === 'GradientStartColor' ? null : 'GradientStartColor')}
-                  />
-                </div>
+                    <div
+                      className="color-circle-wrapper color-circle-4"
+                      style={{
+                        position: 'absolute',
+                        left: '80.14%',
+                        top: '93.5%',
+                        width: '2.8%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.color }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'color' ? null : 'color')}
+                        title="Цвет стебля"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Для деревьев, цветов, кустов - старые параметры */}
+                    <div
+                      className="color-circle-wrapper color-circle-1"
+                      style={{
+                        position: 'absolute',
+                        left: '41.7%',
+                        top: '4.18%',
+                        width: '3.65%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.leafGradientStartColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
+                      />
+                    </div>
+
+                    <div
+                      className="color-circle-wrapper color-circle-2"
+                      style={{
+                        position: 'absolute',
+                        left: '52.1%',
+                        top: '8%',
+                        width: '10.4%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.leafGradientEndColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientEndColor' ? null : 'leafGradientEndColor')}
+                      />
+                    </div>
+
+                    <div
+                      className="color-circle-wrapper color-circle-3"
+                      style={{
+                        position: 'absolute',
+                        left: '68.45%',
+                        top: '82.9%',
+                        width: '8.1%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.GradientEndColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'GradientEndColor' ? null : 'GradientEndColor')}
+                      />
+                    </div>
+
+                    <div
+                      className="color-circle-wrapper color-circle-4"
+                      style={{
+                        position: 'absolute',
+                        left: '80.14%',
+                        top: '93.5%',
+                        width: '2.8%',
+                        aspectRatio: '1',
+                      }}
+                    >
+                      <div
+                        className="color-circle"
+                        style={{ background: params.GradientStartColor }}
+                        onClick={() => setActiveColorPicker(activeColorPicker === 'GradientStartColor' ? null : 'GradientStartColor')}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Canvas для растения с liquid glass эффектом */}
@@ -1577,6 +3747,12 @@ const App = () => {
                 onClick={() => setPlantType('bush')}
               >
                 <img src="/assets/preset-bush.png" alt="Bush" />
+              </div>
+              <div
+                className={`mobile-preset-item ${plantType === 'grass' ? 'active' : ''}`}
+                onClick={() => setPlantType('grass')}
+              >
+                <img src="/assets/preset-grass.png" alt="Grass" />
               </div>
             </div>
           </div>
@@ -1644,35 +3820,58 @@ const App = () => {
           )}
 
           {/* Выбор типа ствола */}
-          <div className="trunk-type-selector">
-            <label className="slider-label">Тип ствола:</label>
-            <select
-              value={params.trunkType}
-              onChange={(e) => handleParamChange('trunkType', e.target.value)}
-              className="trunk-type-dropdown"
-            >
-              <option value="straight">Прямой</option>
-              <option value="organic">Органический</option>
-            </select>
-          </div>
+          {/* Селектор типа ствола/травы */}
+          {plantType === 'grass' ? (
+            <div className="trunk-type-selector">
+              <label className="slider-label">Тип травы:</label>
+              <select
+                value={params.grassType}
+                onChange={(e) => handleParamChange('grassType', e.target.value)}
+                className="trunk-type-dropdown"
+              >
+                <option value="regular">Обычная трава</option>
+                <option value="wheat">Пшеница</option>
+                <option value="wild">Дикая трава</option>
+                <option value="fern">Папоротник</option>
+                <option value="clover">Клевер</option>
+                <option value="dandelion">Одуванчик</option>
+                <option value="chamomile">Ромашка</option>
+                <option value="cornflower">Василек</option>
+                <option value="bellflower">Колокольчик</option>
+              </select>
+            </div>
+          ) : (plantType === 'tree' || plantType === 'flower' || plantType === 'bush') ? (
+            <div className="trunk-type-selector">
+              <label className="slider-label">Тип ствола:</label>
+              <select
+                value={params.trunkType}
+                onChange={(e) => handleParamChange('trunkType', e.target.value)}
+                className="trunk-type-dropdown"
+              >
+                <option value="straight">Прямой</option>
+                <option value="organic">Органический</option>
+              </select>
+            </div>
+          ) : null}
 
           {/* Слайдеры */}
           <div className="controls-section">
             {renderSliders()}
           </div>
 
-          {/* Чекбоксы обводки */}
-          <div className="outline-checkboxes">
-            <div className="checkbox-item">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={params.UseStroke}
-                  onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
-                  className="checkbox-input"
-                />
-                Обводка ствола
-              </label>
+          {/* Чекбоксы обводки (только для tree, flower, bush) */}
+          {plantType !== 'grass' && (
+            <div className="outline-checkboxes">
+              <div className="checkbox-item">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={params.UseStroke}
+                    onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
+                    className="checkbox-input"
+                  />
+                  Обводка ствола
+                </label>
               {params.UseStroke && (
                 <>
                   <div className="color-picker-panel">
@@ -1782,7 +3981,8 @@ const App = () => {
                 )}
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* PhotoshopPicker встроенный в панель (только для десктопа) */}
           {activeColorPicker && !isMobile && (
@@ -1792,15 +3992,20 @@ const App = () => {
                   activeColorPicker === 'leafGradientStartColor' ? params.leafGradientStartColor :
                   activeColorPicker === 'leafGradientEndColor' ? params.leafGradientEndColor :
                   activeColorPicker === 'GradientEndColor' ? params.GradientEndColor :
-                  params.GradientStartColor
+                  activeColorPicker === 'GradientStartColor' ? params.GradientStartColor :
+                  activeColorPicker === 'color' ? params.color :
+                  activeColorPicker === 'leafColor' ? params.leafColor :
+                  activeColorPicker === 'flowerColor' ? params.flowerColor :
+                  activeColorPicker === 'flowerCenterColor' ? params.flowerCenterColor :
+                  params.color
                 }
                 onAccept={() => setActiveColorPicker(null)}
                 onCancel={() => setActiveColorPicker(null)}
                 onChange={(color) => {
                   handleParamChange(activeColorPicker, color.hex);
-                  if (activeColorPicker.includes('leaf')) {
+                  if (activeColorPicker.includes('leaf') && activeColorPicker !== 'leafColor') {
                     handleParamChange('leafUseGradient', true);
-                  } else {
+                  } else if (activeColorPicker.includes('Gradient')) {
                     handleParamChange('UseGradient', true);
                   }
                 }}
