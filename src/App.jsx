@@ -31,8 +31,8 @@ const App = () => {
 
     // Новые параметры для градиента и обводки
     UseGradient: false,
-    GradientStartColor: '#8B4513',
-    GradientEndColor: '#A0522D',
+    GradientStartColor: '#A0522D',
+    GradientEndColor: '#8B4513',
     UseStroke: false,
     StrokeColor: '#000000',
     StrokeWidth: 1,
@@ -67,6 +67,11 @@ const App = () => {
     flowerCenterColor: '#FFD700',
     dandelionFluffy: false, // для одуванчика: false = желтый, true = пушистый
     bellCount: 3, // количество колокольчиков
+
+    // Обводка цветка (отдельно от стебля и листвы)
+    flowerUseStroke: false,
+    flowerStrokeColor: '#000000',
+    flowerStrokeWidth: 1,
   });
 
   const [svgElements, setSvgElements] = useState([]);
@@ -102,6 +107,32 @@ const App = () => {
       }
     };
   }, [debouncedUpdateScreenSize]);
+
+  // Обновление параметров при переключении на траву
+  useEffect(() => {
+    if (plantType === 'grass') {
+      const isFlowerType = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
+      setParams(prev => ({
+        ...prev,
+        GradientStartColor: '#228B22',
+        GradientEndColor: '#32CD32',
+        length: 130,
+        UseGradient: !isFlowerType, // Отключаем градиент для цветов, чтобы params.color работал
+        color: '#228B22' // Зеленый стебель для травы и цветов
+      }));
+    }
+  }, [plantType, params.grassType]);
+
+  // Обновление цветов при включении пушистого одуванчика
+  useEffect(() => {
+    if (params.grassType === 'dandelion' && params.dandelionFluffy) {
+      setParams(prev => ({
+        ...prev,
+        flowerColor: '#FFFFFF', // Белые лучи парашюта
+        flowerCenterColor: '#8B7355' // Коричневые семечки
+      }));
+    }
+  }, [params.dandelionFluffy, params.grassType]);
 
   // Color picker closes only via OK/Cancel buttons, not by clicking outside
 
@@ -856,8 +887,8 @@ const App = () => {
       // Рисуем пушистый круглый цветок (множество маленьких кружков с вариацией размера)
       const fluffCount = 20 + Math.floor(seededRandom(i * 789, centerX) * 15);
 
-      let flowerFill = params.flowerColor || '#FF69B4';
-      let svgFlowerFill = flowerFill;
+      let outerFlowerColor = params.flowerColor || '#FF69B4';
+      let innerFlowerColor = params.flowerCenterColor || '#FFB6C1'; // Используем цвет центра для внутренних кружков
 
       for (let j = 0; j < fluffCount; j++) {
         const angle = (j / fluffCount) * Math.PI * 2 + seededRandom(i * 111 + j, centerY) * 0.5;
@@ -866,15 +897,19 @@ const App = () => {
         const fluffY = flowerY + Math.sin(angle) * dist;
         const fluffSize = (flowerSize / 8) * (0.8 + seededRandom(i * 333 + j, centerX) * 0.4); // Вариация размера
 
+        // Используем цвет центра для внутренних кружков (ближе к центру)
+        const isInner = dist < flowerSize * 0.4;
+        const flowerFill = isInner ? innerFlowerColor : outerFlowerColor;
+
         if (ctx) {
           ctx.beginPath();
           ctx.arc(fluffX, fluffY, fluffSize, 0, Math.PI * 2);
           ctx.fillStyle = flowerFill;
           ctx.fill();
 
-          if (params.UseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth * 0.3;
+          if (params.flowerUseStroke) {
+            ctx.strokeStyle = params.flowerStrokeColor;
+            ctx.lineWidth = params.flowerStrokeWidth * 0.3;
             ctx.stroke();
           }
         }
@@ -882,11 +917,11 @@ const App = () => {
         const svgFluff = {
           type: 'circle',
           cx: fluffX, cy: fluffY, r: fluffSize,
-          fill: svgFlowerFill
+          fill: flowerFill
         };
-        if (params.UseStroke) {
-          svgFluff.stroke = params.StrokeColor;
-          svgFluff.strokeWidth = params.StrokeWidth * 0.3;
+        if (params.flowerUseStroke) {
+          svgFluff.stroke = params.flowerStrokeColor;
+          svgFluff.strokeWidth = params.flowerStrokeWidth * 0.3;
         }
         svgElements.push(svgFluff);
       }
@@ -910,7 +945,7 @@ const App = () => {
           ctx.beginPath();
           ctx.moveTo(leafBaseX, leafBaseY);
           ctx.lineTo(leafStemEndX, leafStemEndY);
-          ctx.strokeStyle = params.color;
+          ctx.strokeStyle = params.leafColor || '#228B22';
           ctx.lineWidth = stemThickness * 0.4;
           ctx.stroke();
         }
@@ -918,7 +953,7 @@ const App = () => {
         svgElements.push({
           type: 'line',
           x1: leafBaseX, y1: leafBaseY, x2: leafStemEndX, y2: leafStemEndY,
-          stroke: params.color,
+          stroke: params.leafColor || '#228B22',
           strokeWidth: stemThickness * 0.4
         });
 
@@ -935,8 +970,8 @@ const App = () => {
             ctx.fill();
 
             if (params.leafUseStroke) {
-              ctx.strokeStyle = params.StrokeColor;
-              ctx.lineWidth = params.StrokeWidth * 0.5;
+              ctx.strokeStyle = params.leafStrokeColor || '#006400';
+              ctx.lineWidth = (params.leafStrokeWidth || 1) * 0.5;
               ctx.stroke();
             }
           }
@@ -949,8 +984,8 @@ const App = () => {
             rotation: subAngle
           };
           if (params.leafUseStroke) {
-            svgLeaf.stroke = params.StrokeColor;
-            svgLeaf.strokeWidth = params.StrokeWidth * 0.5;
+            svgLeaf.stroke = params.leafStrokeColor || '#006400';
+            svgLeaf.strokeWidth = (params.leafStrokeWidth || 1) * 0.5;
           }
           svgElements.push(svgLeaf);
         }
@@ -1025,8 +1060,10 @@ const App = () => {
       svgElements.push(svgLine);
 
       if (isFluffy) {
-        // Пушистый белый одуванчик - улучшенные "парашютики" с семечками
+        // Пушистый одуванчик - улучшенные "парашютики" с семечками (цвет регулируется)
         const seedCount = Math.floor(25 + seededRandom(i * 777, centerX) * 20);
+        const rayColor = params.flowerColor || '#FFFFFF'; // Цвет лучей парашюта
+        const seedColor = params.flowerCenterColor || '#8B7355'; // Цвет семечка
 
         for (let j = 0; j < seedCount; j++) {
           const angle = (j / seedCount) * Math.PI * 2 + seededRandom(j * 333, i) * 0.4;
@@ -1049,8 +1086,8 @@ const App = () => {
             ctx.lineTo(stemEndX, stemEndY);
             ctx.stroke();
 
-            // Семечко у основания
-            ctx.fillStyle = '#8B7355';
+            // Семечко у основания - используем flowerCenterColor
+            ctx.fillStyle = seedColor;
             ctx.beginPath();
             ctx.ellipse(seedBaseX, seedBaseY, 0.8, 1.2, angle, 0, Math.PI * 2);
             ctx.fill();
@@ -1059,13 +1096,22 @@ const App = () => {
             const umbrellaRays = 8 + Math.floor(seededRandom(j * 777, i) * 4);
             const rayBaseLength = 2.5;
 
+            // Преобразуем цвет в rgba с прозрачностью
+            const hexToRgba = (hex, alpha) => {
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            };
+
             for (let k = 0; k < umbrellaRays; k++) {
               const rayAngle = (k / umbrellaRays) * Math.PI * 2 + seededRandom(j * 888 + k, i) * 0.2;
               const rayLength = rayBaseLength * (0.8 + seededRandom(j * 999 + k, i) * 0.4);
               const rayEndX = stemEndX + Math.cos(rayAngle) * rayLength;
               const rayEndY = stemEndY + Math.sin(rayAngle) * rayLength;
 
-              ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+              // Используем flowerColor для лучей
+              ctx.strokeStyle = hexToRgba(rayColor, 0.6);
               ctx.lineWidth = 0.3;
               ctx.beginPath();
               ctx.moveTo(stemEndX, stemEndY);
@@ -1080,7 +1126,7 @@ const App = () => {
                 const fluffEndX = rayEndX + Math.cos(fluffAngle) * fluffLength;
                 const fluffEndY = rayEndY + Math.sin(fluffAngle) * fluffLength;
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.strokeStyle = hexToRgba(rayColor, 0.4);
                 ctx.lineWidth = 0.2;
                 ctx.beginPath();
                 ctx.moveTo(rayEndX, rayEndY);
@@ -1098,12 +1144,12 @@ const App = () => {
             strokeWidth: 0.4
           });
 
-          // SVG семечко
+          // SVG семечко - используем flowerCenterColor
           svgElements.push({
             type: 'ellipse',
             cx: seedBaseX, cy: seedBaseY,
             rx: 0.8, ry: 1.2,
-            fill: '#8B7355',
+            fill: seedColor,
             rotation: angle
           });
 
@@ -1111,20 +1157,29 @@ const App = () => {
           const umbrellaRays = 8 + Math.floor(seededRandom(j * 777, i) * 4);
           const rayBaseLength = 2.5;
 
+          // Преобразуем цвет в rgba для SVG
+          const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          };
+
           for (let k = 0; k < umbrellaRays; k++) {
             const rayAngle = (k / umbrellaRays) * Math.PI * 2 + seededRandom(j * 888 + k, i) * 0.2;
             const rayLength = rayBaseLength * (0.8 + seededRandom(j * 999 + k, i) * 0.4);
             const rayEndX = stemEndX + Math.cos(rayAngle) * rayLength;
             const rayEndY = stemEndY + Math.sin(rayAngle) * rayLength;
 
+            // Используем flowerColor для лучей
             svgElements.push({
               type: 'line',
               x1: stemEndX, y1: stemEndY, x2: rayEndX, y2: rayEndY,
-              stroke: 'rgba(255, 255, 255, 0.6)',
+              stroke: hexToRgba(rayColor, 0.6),
               strokeWidth: 0.3
             });
 
-            // SVG пушистые ворсинки
+            // SVG пушистые ворсинки - используем flowerColor
             const fluffCount = 3;
             for (let f = 0; f < fluffCount; f++) {
               const fluffAngle = rayAngle + (f - 1) * 0.15;
@@ -1135,7 +1190,7 @@ const App = () => {
               svgElements.push({
                 type: 'line',
                 x1: rayEndX, y1: rayEndY, x2: fluffEndX, y2: fluffEndY,
-                stroke: 'rgba(255, 255, 255, 0.4)',
+                stroke: hexToRgba(rayColor, 0.4),
                 strokeWidth: 0.2
               });
             }
@@ -1168,9 +1223,9 @@ const App = () => {
             ctx.ellipse(petalLength * 0.5, 0, petalLength * 0.5, petalWidth, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            if (params.UseStroke) {
-              ctx.strokeStyle = params.StrokeColor;
-              ctx.lineWidth = params.StrokeWidth * 0.5;
+            if (params.flowerUseStroke) {
+              ctx.strokeStyle = params.flowerStrokeColor;
+              ctx.lineWidth = params.flowerStrokeWidth * 0.5;
               ctx.stroke();
             }
             ctx.restore();
@@ -1186,9 +1241,9 @@ const App = () => {
             fill: svgFlowerFill,
             rotation: angle
           };
-          if (params.UseStroke) {
-            svgPetal.stroke = params.StrokeColor;
-            svgPetal.strokeWidth = params.StrokeWidth * 0.5;
+          if (params.flowerUseStroke) {
+            svgPetal.stroke = params.flowerStrokeColor;
+            svgPetal.strokeWidth = params.flowerStrokeWidth * 0.5;
           }
           svgElements.push(svgPetal);
         }
@@ -1265,8 +1320,8 @@ const App = () => {
           ctx.fill();
 
           if (params.leafUseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth;
+            ctx.strokeStyle = params.leafStrokeColor || '#006400';
+            ctx.lineWidth = params.leafStrokeWidth || 1;
             ctx.stroke();
           }
         }
@@ -1284,8 +1339,8 @@ const App = () => {
           fill: params.leafColor || '#2D5016'
         };
         if (params.leafUseStroke) {
-          svgLeaf.stroke = params.StrokeColor;
-          svgLeaf.strokeWidth = params.StrokeWidth;
+          svgLeaf.stroke = params.leafStrokeColor || '#006400';
+          svgLeaf.strokeWidth = params.leafStrokeWidth || 1;
         }
         svgElements.push(svgLeaf);
       }
@@ -1379,9 +1434,9 @@ const App = () => {
           ctx.ellipse(0, 0, petalLength * 0.5, petalWidth, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          if (params.UseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth * 0.5;
+          if (params.flowerUseStroke) {
+            ctx.strokeStyle = params.flowerStrokeColor;
+            ctx.lineWidth = params.flowerStrokeWidth * 0.5;
             ctx.stroke();
           }
           ctx.restore();
@@ -1395,9 +1450,9 @@ const App = () => {
           fill: petalColor,
           rotation: angle
         };
-        if (params.UseStroke) {
-          svgPetal.stroke = params.StrokeColor;
-          svgPetal.strokeWidth = params.StrokeWidth * 0.5;
+        if (params.flowerUseStroke) {
+          svgPetal.stroke = params.flowerStrokeColor;
+          svgPetal.strokeWidth = params.flowerStrokeWidth * 0.5;
         }
         svgElements.push(svgPetal);
       }
@@ -1426,9 +1481,9 @@ const App = () => {
           ctx.fill();
         }
 
-        if (params.UseStroke) {
-          ctx.strokeStyle = params.StrokeColor;
-          ctx.lineWidth = params.StrokeWidth;
+        if (params.flowerUseStroke) {
+          ctx.strokeStyle = params.flowerStrokeColor;
+          ctx.lineWidth = params.flowerStrokeWidth;
           ctx.beginPath();
           ctx.arc(endX, endY, centerRadius, 0, Math.PI * 2);
           ctx.stroke();
@@ -1442,9 +1497,9 @@ const App = () => {
         r: centerRadius,
         fill: centerColor
       };
-      if (params.UseStroke) {
-        svgCenter.stroke = params.StrokeColor;
-        svgCenter.strokeWidth = params.StrokeWidth;
+      if (params.flowerUseStroke) {
+        svgCenter.stroke = params.flowerStrokeColor;
+        svgCenter.strokeWidth = params.flowerStrokeWidth;
       }
       svgElements.push(svgCenter);
 
@@ -1491,18 +1546,22 @@ const App = () => {
             ctx.stroke();
 
             if (params.leafUseStroke) {
-              ctx.strokeStyle = params.StrokeColor;
-              ctx.lineWidth = params.StrokeWidth * 0.5;
+              ctx.strokeStyle = params.leafStrokeColor || '#006400';
+              ctx.lineWidth = (params.leafStrokeWidth || 1) * 0.5;
               ctx.stroke();
             }
           }
 
-          svgElements.push({
+          const svgLeafSeg = {
             type: 'line',
             x1: segX, y1: segY, x2: segEndX, y2: segEndY,
             stroke: params.leafColor || '#2D5016',
             strokeWidth: stemThickness * 0.3
-          });
+          };
+          if (params.leafUseStroke) {
+            svgLeafSeg.strokeOutline = { color: params.leafStrokeColor || '#006400', width: (params.leafStrokeWidth || 1) * 0.5 };
+          }
+          svgElements.push(svgLeafSeg);
         }
 
         // Центральная жилка листа
@@ -1629,9 +1688,9 @@ const App = () => {
           ctx.closePath();
           ctx.fill();
 
-          if (params.UseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth * 0.5;
+          if (params.flowerUseStroke) {
+            ctx.strokeStyle = params.flowerStrokeColor;
+            ctx.lineWidth = params.flowerStrokeWidth * 0.5;
             ctx.stroke();
           }
         }
@@ -1648,9 +1707,9 @@ const App = () => {
           d: pathD,
           fill: petalColor
         };
-        if (params.UseStroke) {
-          svgPetal.stroke = params.StrokeColor;
-          svgPetal.strokeWidth = params.StrokeWidth * 0.5;
+        if (params.flowerUseStroke) {
+          svgPetal.stroke = params.flowerStrokeColor;
+          svgPetal.strokeWidth = params.flowerStrokeWidth * 0.5;
         }
         svgElements.push(svgPetal);
       }
@@ -1695,19 +1754,24 @@ const App = () => {
         ctx.arc(endX, endY, centerRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        if (params.UseStroke) {
-          ctx.strokeStyle = params.StrokeColor;
-          ctx.lineWidth = params.StrokeWidth;
+        if (params.flowerUseStroke) {
+          ctx.strokeStyle = params.flowerStrokeColor;
+          ctx.lineWidth = params.flowerStrokeWidth;
           ctx.stroke();
         }
       }
 
-      svgElements.push({
+      const svgCenterCircle = {
         type: 'circle',
         cx: endX, cy: endY,
         r: centerRadius,
         fill: '#2C1810'
-      });
+      };
+      if (params.flowerUseStroke) {
+        svgCenterCircle.stroke = params.flowerStrokeColor;
+        svgCenterCircle.strokeWidth = params.flowerStrokeWidth;
+      }
+      svgElements.push(svgCenterCircle);
 
       // Узкие ланцетные листья на стебле (2-3 пары)
       const leafPairs = 2 + Math.floor(seededRandom(i * 888, centerX) * 2);
@@ -1742,8 +1806,8 @@ const App = () => {
           ctx.fill();
 
           if (params.leafUseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth;
+            ctx.strokeStyle = params.leafStrokeColor || '#006400';
+            ctx.lineWidth = params.leafStrokeWidth || 1;
             ctx.stroke();
           }
         }
@@ -1760,8 +1824,8 @@ const App = () => {
           fill: params.leafColor || '#2D5016'
         };
         if (params.leafUseStroke) {
-          svgLeaf.stroke = params.StrokeColor;
-          svgLeaf.strokeWidth = params.StrokeWidth;
+          svgLeaf.stroke = params.leafStrokeColor || '#006400';
+          svgLeaf.strokeWidth = params.leafStrokeWidth || 1;
         }
         svgElements.push(svgLeaf);
       }
@@ -1907,9 +1971,9 @@ const App = () => {
           ctx.closePath();
           ctx.fill();
 
-          if (params.UseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth;
+          if (params.flowerUseStroke) {
+            ctx.strokeStyle = params.flowerStrokeColor;
+            ctx.lineWidth = params.flowerStrokeWidth;
             ctx.stroke();
           }
 
@@ -1944,9 +2008,9 @@ const App = () => {
           d: svgBellPath,
           fill: bellColor
         };
-        if (params.UseStroke) {
-          svgBell.stroke = params.StrokeColor;
-          svgBell.strokeWidth = params.StrokeWidth;
+        if (params.flowerUseStroke) {
+          svgBell.stroke = params.flowerStrokeColor;
+          svgBell.strokeWidth = params.flowerStrokeWidth;
         }
         svgElements.push(svgBell);
 
@@ -2049,8 +2113,8 @@ const App = () => {
           ctx.fill();
 
           if (params.leafUseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth;
+            ctx.strokeStyle = params.leafStrokeColor || '#006400';
+            ctx.lineWidth = params.leafStrokeWidth || 1;
             ctx.stroke();
           }
         }
@@ -2068,8 +2132,8 @@ const App = () => {
           fill: params.leafColor || '#2D5016'
         };
         if (params.leafUseStroke) {
-          svgLeaf.stroke = params.StrokeColor;
-          svgLeaf.strokeWidth = params.StrokeWidth;
+          svgLeaf.stroke = params.leafStrokeColor || '#006400';
+          svgLeaf.strokeWidth = params.leafStrokeWidth || 1;
         }
         svgElements.push(svgLeaf);
       }
@@ -2294,8 +2358,8 @@ const App = () => {
           ctx.fill();
 
           if (params.leafUseStroke) {
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = params.StrokeWidth * 0.5;
+            ctx.strokeStyle = params.leafStrokeColor || '#006400';
+            ctx.lineWidth = (params.leafStrokeWidth || 1) * 0.5;
             ctx.stroke();
           }
 
@@ -2330,8 +2394,8 @@ const App = () => {
           rotation: grainAngle
         };
         if (params.leafUseStroke) {
-          svgGrain.stroke = params.StrokeColor;
-          svgGrain.strokeWidth = params.StrokeWidth * 0.5;
+          svgGrain.stroke = params.leafStrokeColor || '#006400';
+          svgGrain.strokeWidth = (params.leafStrokeWidth || 1) * 0.5;
         }
         svgElements.push(svgGrain);
 
@@ -2551,8 +2615,8 @@ const App = () => {
             ctx.beginPath();
             ctx.moveTo(leafPosX, leafPosY);
             ctx.lineTo(leafEndX, leafEndY);
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = baseThickness * 0.6 + 2 * params.StrokeWidth;
+            ctx.strokeStyle = params.leafStrokeColor || '#006400';
+            ctx.lineWidth = baseThickness * 0.6 + 2 * (params.leafStrokeWidth || 1);
             ctx.stroke();
           }
 
@@ -2573,7 +2637,7 @@ const App = () => {
           strokeLinecap: 'round'
         };
         if (params.leafUseStroke) {
-          svgLeafLine.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
+          svgLeafLine.strokeOutline = { color: params.leafStrokeColor || '#006400', width: params.leafStrokeWidth || 1 };
         }
         svgElements.push(svgLeafLine);
       }
@@ -3450,7 +3514,8 @@ const App = () => {
                   />
                 </div>
 
-                {(params.grassType === 'dandelion' || params.grassType === 'chamomile' || params.grassType === 'cornflower') && (
+                {(params.grassType === 'dandelion' || params.grassType === 'chamomile' || params.grassType === 'cornflower') &&
+                 !(params.grassType === 'dandelion' && params.dandelionFluffy) && (
                   <div className="slider-group">
                     <label className="slider-label">
                       Количество лепестков: {params.petalCount}
@@ -3498,7 +3563,7 @@ const App = () => {
               </>
             )}
 
-            {/* Чекбоксы для обводки - доступны для всех типов травы */}
+            {/* Чекбоксы и настройки обводки - доступны для всех типов травы */}
             <div className="slider-group">
               <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span>Обводка стебля</span>
@@ -3509,19 +3574,103 @@ const App = () => {
                   style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                 />
               </label>
+              {params.UseStroke && (
+                <>
+                  <input
+                    type="color"
+                    value={params.StrokeColor}
+                    onChange={(e) => handleParamChange('StrokeColor', e.target.value)}
+                    style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
+                  />
+                  <label className="slider-label" style={{ marginTop: '5px' }}>
+                    Толщина: {params.StrokeWidth}
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="5"
+                    step="0.5"
+                    value={params.StrokeWidth}
+                    onChange={(e) => handleParamChange('StrokeWidth', parseFloat(e.target.value))}
+                    className="slider"
+                  />
+                </>
+              )}
             </div>
 
-            <div className="slider-group">
-              <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span>Обводка листвы</span>
-                <input
-                  type="checkbox"
-                  checked={params.leafUseStroke}
-                  onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
-                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                />
-              </label>
-            </div>
+            {/* Обводка цветка - только для цветов, но не для пушистого одуванчика */}
+            {isFlower && !(params.grassType === 'dandelion' && params.dandelionFluffy) && (
+              <div className="slider-group">
+                <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span>Обводка цветка</span>
+                  <input
+                    type="checkbox"
+                    checked={params.flowerUseStroke}
+                    onChange={(e) => handleParamChange('flowerUseStroke', e.target.checked)}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                </label>
+                {params.flowerUseStroke && (
+                  <>
+                    <input
+                      type="color"
+                      value={params.flowerStrokeColor}
+                      onChange={(e) => handleParamChange('flowerStrokeColor', e.target.value)}
+                      style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
+                    />
+                    <label className="slider-label" style={{ marginTop: '5px' }}>
+                      Толщина: {params.flowerStrokeWidth}
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="5"
+                      step="0.5"
+                      value={params.flowerStrokeWidth}
+                      onChange={(e) => handleParamChange('flowerStrokeWidth', parseFloat(e.target.value))}
+                      className="slider"
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Обводка листвы - только для типов с листьями (wheat, fern) или цветов */}
+            {(params.grassType === 'wheat' || params.grassType === 'fern' || isFlower) && (
+              <div className="slider-group">
+                <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span>Обводка листвы</span>
+                  <input
+                    type="checkbox"
+                    checked={params.leafUseStroke}
+                    onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                </label>
+                {params.leafUseStroke && (
+                  <>
+                    <input
+                      type="color"
+                      value={params.leafStrokeColor || '#006400'}
+                      onChange={(e) => handleParamChange('leafStrokeColor', e.target.value)}
+                      style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
+                    />
+                    <label className="slider-label" style={{ marginTop: '5px' }}>
+                      Толщина: {params.leafStrokeWidth || 1}
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="5"
+                      step="0.5"
+                      value={params.leafStrokeWidth || 1}
+                      onChange={(e) => handleParamChange('leafStrokeWidth', parseFloat(e.target.value))}
+                      className="slider"
+                    />
+                  </>
+                )}
+              </div>
+            )}
           </>
         );
       default:
@@ -3572,78 +3721,164 @@ const App = () => {
               <div className="color-picker-circles">
                 {plantType === 'grass' ? (
                   <>
-                    {/* Для травы/цветов - другие параметры */}
-                    <div
-                      className="color-circle-wrapper color-circle-1"
-                      style={{
-                        position: 'absolute',
-                        left: '41.7%',
-                        top: '4.18%',
-                        width: '3.65%',
-                        aspectRatio: '1',
-                      }}
-                    >
-                      <div
-                        className="color-circle"
-                        style={{ background: params.leafColor }}
-                        onClick={() => setActiveColorPicker(activeColorPicker === 'leafColor' ? null : 'leafColor')}
-                        title="Цвет листьев"
-                      />
-                    </div>
+                    {(() => {
+                      const isFlower = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
+                      const isClover = params.grassType === 'clover';
+                      const isDandelion = params.grassType === 'dandelion';
 
-                    <div
-                      className="color-circle-wrapper color-circle-2"
-                      style={{
-                        position: 'absolute',
-                        left: '52.1%',
-                        top: '8%',
-                        width: '10.4%',
-                        aspectRatio: '1',
-                      }}
-                    >
-                      <div
-                        className="color-circle"
-                        style={{ background: params.flowerColor }}
-                        onClick={() => setActiveColorPicker(activeColorPicker === 'flowerColor' ? null : 'flowerColor')}
-                        title="Цвет цветка"
-                      />
-                    </div>
+                      // Для клевера: листья, цветок, стебель, центр
+                      // Для одуванчика: лепестки, центр, стебель, листья
+                      // Для остальных: листья, цветок, центр, стебель
 
-                    <div
-                      className="color-circle-wrapper color-circle-3"
-                      style={{
-                        position: 'absolute',
-                        left: '68.45%',
-                        top: '82.9%',
-                        width: '8.1%',
-                        aspectRatio: '1',
-                      }}
-                    >
-                      <div
-                        className="color-circle"
-                        style={{ background: params.flowerCenterColor }}
-                        onClick={() => setActiveColorPicker(activeColorPicker === 'flowerCenterColor' ? null : 'flowerCenterColor')}
-                        title="Цвет центра цветка"
-                      />
-                    </div>
+                      let circle1Color, circle1Param, circle1Title;
+                      let circle2Color, circle2Param, circle2Title;
+                      let circle3Color, circle3Param, circle3Title;
+                      let circle4Color, circle4Param, circle4Title;
 
-                    <div
-                      className="color-circle-wrapper color-circle-4"
-                      style={{
-                        position: 'absolute',
-                        left: '80.14%',
-                        top: '93.5%',
-                        width: '2.8%',
-                        aspectRatio: '1',
-                      }}
-                    >
-                      <div
-                        className="color-circle"
-                        style={{ background: params.color }}
-                        onClick={() => setActiveColorPicker(activeColorPicker === 'color' ? null : 'color')}
-                        title="Цвет стебля"
-                      />
-                    </div>
+                      if (isClover) {
+                        circle1Color = params.flowerCenterColor;
+                        circle1Param = 'flowerCenterColor';
+                        circle1Title = "Цвет центра цветка";
+                        circle2Color = params.flowerColor;
+                        circle2Param = 'flowerColor';
+                        circle2Title = "Цвет цветка";
+                        circle3Color = params.color;
+                        circle3Param = 'color';
+                        circle3Title = "Цвет стебля клевера";
+                        circle4Color = params.leafColor;
+                        circle4Param = 'leafColor';
+                        circle4Title = "Цвет росточков/листьев";
+                      } else if (isDandelion) {
+                        circle1Color = params.flowerColor;
+                        circle1Param = 'flowerColor';
+                        circle1Title = "Цвет лепестков";
+                        circle2Color = params.flowerCenterColor;
+                        circle2Param = 'flowerCenterColor';
+                        circle2Title = "Цвет центра";
+                        circle3Color = params.color;
+                        circle3Param = 'color';
+                        circle3Title = "Цвет стебля";
+                        circle4Color = params.leafColor;
+                        circle4Param = 'leafColor';
+                        circle4Title = "Цвет листвы";
+                      } else if (isFlower) {
+                        // Для chamomile, cornflower, bellflower
+                        circle1Color = params.leafColor;
+                        circle1Param = 'leafColor';
+                        circle1Title = "Цвет листьев";
+                        circle2Color = params.flowerColor;
+                        circle2Param = 'flowerColor';
+                        circle2Title = "Цвет цветка";
+                        circle3Color = params.flowerCenterColor;
+                        circle3Param = 'flowerCenterColor';
+                        circle3Title = "Цвет центра цветка";
+                        circle4Color = params.color;
+                        circle4Param = 'color';
+                        circle4Title = "Цвет стебля";
+                      } else {
+                        // Для травы (regular, wheat, wild, fern)
+                        circle1Color = params.GradientStartColor;
+                        circle1Param = 'GradientStartColor';
+                        circle1Title = "Начало градиента травы";
+                        circle2Color = params.GradientEndColor;
+                        circle2Param = 'GradientEndColor';
+                        circle2Title = "Конец градиента травы";
+                        circle3Color = '#999';
+                        circle3Param = null;
+                        circle3Title = "Недоступно для этого типа";
+                        circle4Color = '#999';
+                        circle4Param = null;
+                        circle4Title = "Недоступно для этого типа";
+                      }
+
+                      return (
+                        <>
+                          {/* Круг 1 (верхний левый) */}
+                          <div
+                            className="color-circle-wrapper color-circle-1"
+                            style={{
+                              position: 'absolute',
+                              left: '41.7%',
+                              top: '4.18%',
+                              width: '3.65%',
+                              aspectRatio: '1',
+                            }}
+                          >
+                            <div
+                              className="color-circle"
+                              style={{ background: circle1Color }}
+                              onClick={() => circle1Param && setActiveColorPicker(circle1Param)}
+                              title={circle1Title}
+                            />
+                          </div>
+
+                          {/* Круг 2 (верхний правый) */}
+                          <div
+                            className="color-circle-wrapper color-circle-2"
+                            style={{
+                              position: 'absolute',
+                              left: '52.1%',
+                              top: '8%',
+                              width: '10.4%',
+                              aspectRatio: '1',
+                            }}
+                          >
+                            <div
+                              className="color-circle"
+                              style={{ background: circle2Color }}
+                              onClick={() => circle2Param && setActiveColorPicker(circle2Param)}
+                              title={circle2Title}
+                            />
+                          </div>
+
+                          {/* Круг 3 (нижний левый) */}
+                          <div
+                            className="color-circle-wrapper color-circle-3"
+                            style={{
+                              position: 'absolute',
+                              left: '68.45%',
+                              top: '82.9%',
+                              width: '8.1%',
+                              aspectRatio: '1',
+                            }}
+                          >
+                            <div
+                              className="color-circle"
+                              style={{
+                                background: circle3Color,
+                                opacity: circle3Param ? 1 : 0.3,
+                                cursor: circle3Param ? 'pointer' : 'not-allowed'
+                              }}
+                              onClick={() => circle3Param && setActiveColorPicker(circle3Param)}
+                              title={circle3Title}
+                            />
+                          </div>
+
+                          {/* Круг 4 (нижний правый) */}
+                          <div
+                            className="color-circle-wrapper color-circle-4"
+                            style={{
+                              position: 'absolute',
+                              left: '80.14%',
+                              top: '93.5%',
+                              width: '2.8%',
+                              aspectRatio: '1',
+                            }}
+                          >
+                            <div
+                              className="color-circle"
+                              style={{
+                                background: circle4Color,
+                                opacity: circle4Param ? 1 : 0.3,
+                                cursor: circle4Param ? 'pointer' : 'not-allowed'
+                              }}
+                              onClick={() => circle4Param && setActiveColorPicker(circle4Param)}
+                              title={circle4Title}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>
@@ -3915,21 +4150,21 @@ const App = () => {
                   <div className="color-picker-panel">
                     <input
                       type="color"
-                      value={params.leafStrokeColor}
+                      value={params.leafStrokeColor || '#006400'}
                       onChange={(e) => handleParamChange('leafStrokeColor', e.target.value)}
                       className="color-input-small"
                     />
                   </div>
                   <div className="stroke-width-slider">
                     <label className="slider-label-small">
-                      Толщина: {params.leafStrokeWidth}
+                      Толщина: {params.leafStrokeWidth || 1}
                     </label>
                     <input
                       type="range"
                       min="0.5"
                       max="5"
                       step="0.5"
-                      value={params.leafStrokeWidth}
+                      value={params.leafStrokeWidth || 1}
                       onChange={(e) => handleParamChange('leafStrokeWidth', parseFloat(e.target.value))}
                       className="slider-small"
                     />
@@ -4023,33 +4258,37 @@ const App = () => {
             </button>
           </div>
 
-          {/* Drawing canvas - всегда видимый */}
-          <div className="drawing-canvas-wrapper">
-            <img
-              src="/assets/list.svg"
-              alt="Draw leaf"
-              className={`drawing-placeholder ${customLeafPoints.length > 0 ? 'hidden' : ''}`}
-            />
-            <canvas
-              ref={drawingRef}
-              width={DRAWING_CANVAS_SIZE}
-              height={DRAWING_CANVAS_SIZE}
-              className="drawing-canvas"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
-              onTouchStart={handleDrawStart}
-              onTouchMove={handleDrawMove}
-              onTouchEnd={handleDrawEnd}
-              onTouchCancel={handleDrawEnd}
-            />
-          </div>
+          {/* Drawing canvas - только для деревьев, кустов и обычных цветов */}
+          {plantType !== 'grass' && (
+            <>
+              <div className="drawing-canvas-wrapper">
+                <img
+                  src="/assets/list.svg"
+                  alt="Draw leaf"
+                  className={`drawing-placeholder ${customLeafPoints.length > 0 ? 'hidden' : ''}`}
+                />
+                <canvas
+                  ref={drawingRef}
+                  width={DRAWING_CANVAS_SIZE}
+                  height={DRAWING_CANVAS_SIZE}
+                  className="drawing-canvas"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
+                  onTouchStart={handleDrawStart}
+                  onTouchMove={handleDrawMove}
+                  onTouchEnd={handleDrawEnd}
+                  onTouchCancel={handleDrawEnd}
+                />
+              </div>
 
-          {/* Кнопка управления drawing */}
-          <div className="drawing-actions">
-            <button onClick={clearDrawing} className="btn-drawing btn-drawing-full">стереть</button>
-          </div>
+              {/* Кнопка управления drawing */}
+              <div className="drawing-actions">
+                <button onClick={clearDrawing} className="btn-drawing btn-drawing-full">стереть</button>
+              </div>
+            </>
+          )}
 
           {/* Кнопки скачивания */}
           <div className="download-section">
