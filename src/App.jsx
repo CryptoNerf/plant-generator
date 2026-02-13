@@ -80,6 +80,14 @@ const App = () => {
   const [randomSeed, setRandomSeed] = useState(0);
   const DRAWING_CANVAS_SIZE = 240;
 
+  // Сохранение параметров для каждого типа растения
+  const [savedParams, setSavedParams] = useState({
+    tree: null,
+    bush: null,
+    flower: null,
+    grass: null
+  });
+
   // Обработка изменения размера экрана с дебаунсом
   const updateScreenSize = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -108,20 +116,121 @@ const App = () => {
     };
   }, [debouncedUpdateScreenSize]);
 
-  // Обновление параметров при переключении на траву
+  // Обновление параметров при переключении типа растения
+  const prevPlantTypeRef = useRef(plantType);
+  const paramsRef = useRef(params);
+  const savedParamsRef = useRef(savedParams);
+
+  // Обновляем refs при каждом рендере
   useEffect(() => {
-    if (plantType === 'grass') {
-      const isFlowerType = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
+    paramsRef.current = params;
+    savedParamsRef.current = savedParams;
+  });
+
+  useEffect(() => {
+    const prevPlantType = prevPlantTypeRef.current;
+
+    // Если тип не изменился, ничего не делаем
+    if (prevPlantType === plantType) {
+      return;
+    }
+
+    // Сохраняем текущие параметры для предыдущего типа
+    const currentParams = paramsRef.current;
+    setSavedParams(prev => ({
+      ...prev,
+      [prevPlantType]: { ...currentParams }
+    }));
+
+    const isFlowerType = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(currentParams.grassType);
+    const saved = savedParamsRef.current;
+
+    // Проверяем, есть ли сохраненные параметры для нового типа
+    if (saved[plantType]) {
+      // Восстанавливаем сохраненные параметры
+      setParams(saved[plantType]);
+    } else {
+      // Устанавливаем дефолтные параметры для нового типа
+      const defaultParams = {
+        tree: {
+          length: 80,
+          color: '#8B4513',
+          leafColor: '#228B22',
+          GradientStartColor: '#A0522D',
+          GradientEndColor: '#8B4513',
+          UseGradient: false,
+          UseStroke: false,
+          StrokeColor: '#000000',
+          StrokeWidth: 1,
+          leafUseStroke: false,
+          leafStrokeColor: '#006400',
+          leafStrokeWidth: 1,
+          flowerUseStroke: false,
+          flowerStrokeColor: '#000000',
+          flowerStrokeWidth: 1
+        },
+        bush: {
+          length: 80,
+          color: '#8B4513',
+          leafColor: '#228B22',
+          GradientStartColor: '#A0522D',
+          GradientEndColor: '#8B4513',
+          UseGradient: false,
+          UseStroke: false,
+          StrokeColor: '#000000',
+          StrokeWidth: 1,
+          leafUseStroke: false,
+          leafStrokeColor: '#006400',
+          leafStrokeWidth: 1,
+          flowerUseStroke: false,
+          flowerStrokeColor: '#000000',
+          flowerStrokeWidth: 1
+        },
+        flower: {
+          length: 80,
+          color: '#8B4513',
+          leafColor: '#228B22',
+          GradientStartColor: '#A0522D',
+          GradientEndColor: '#8B4513',
+          UseGradient: false,
+          UseStroke: false,
+          StrokeColor: '#000000',
+          StrokeWidth: 1,
+          leafUseStroke: false,
+          leafStrokeColor: '#006400',
+          leafStrokeWidth: 1,
+          flowerUseStroke: false,
+          flowerStrokeColor: '#000000',
+          flowerStrokeWidth: 1
+        },
+        grass: {
+          GradientStartColor: '#228B22',
+          GradientEndColor: '#32CD32',
+          length: 130,
+          UseGradient: !isFlowerType,
+          color: '#228B22',
+          leafColor: '#228B22',
+          UseStroke: false,
+          StrokeColor: '#000000',
+          StrokeWidth: 1,
+          leafUseStroke: false,
+          leafStrokeColor: '#006400',
+          leafStrokeWidth: 1,
+          flowerUseStroke: false,
+          flowerStrokeColor: '#000000',
+          flowerStrokeWidth: 1
+        }
+      };
+
       setParams(prev => ({
         ...prev,
-        GradientStartColor: '#228B22',
-        GradientEndColor: '#32CD32',
-        length: 130,
-        UseGradient: !isFlowerType, // Отключаем градиент для цветов, чтобы params.color работал
-        color: '#228B22' // Зеленый стебель для травы и цветов
+        ...defaultParams[plantType]
       }));
     }
-  }, [plantType, params.grassType]);
+
+    // Обновляем ref для следующего раза
+    prevPlantTypeRef.current = plantType;
+  }, [plantType]);
 
   // Обновление цветов при включении пушистого одуванчика
   useEffect(() => {
