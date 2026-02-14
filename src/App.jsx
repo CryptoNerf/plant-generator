@@ -13,6 +13,150 @@ const App = () => {
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [language, setLanguage] = useState('ru'); // 'ru' или 'en'
+
+  // Переводы
+  const translations = {
+    ru: {
+      parameters: 'Параметры',
+      tree: 'Дерево',
+      bush: 'Куст',
+      flower: 'Цветок',
+      grass: 'Трава',
+      branches: 'Ветки',
+      branchLength: 'Длина веток',
+      angle: 'Угол',
+      thickness: 'Толщина',
+      levels: 'Уровни',
+      leafSize: 'Размер листа',
+      leafDensity: 'Плотность листвы',
+      petals: 'Лепестки',
+      centerSize: 'Размер центра',
+      quantity: 'Количество',
+      height: 'Высота',
+      curvature: 'Изгиб',
+      spread: 'Разброс',
+      windDirection: 'Направление ветра',
+      grassType: 'Тип травы:',
+      regularGrass: 'Обычная трава',
+      wheat: 'Пшеница',
+      wildGrass: 'Дикая трава',
+      fern: 'Папоротник',
+      clover: 'Клевер',
+      dandelion: 'Одуванчик',
+      chamomile: 'Ромашка',
+      cornflower: 'Василек',
+      bellflower: 'Колокольчик',
+      flowerSize: 'Размер цветка',
+      petalCount: 'Количество лепестков',
+      fluffyDandelion: 'Пушистый одуванчик',
+      bellsPerStem: 'Колокольчиков на стебле',
+      stemStroke: 'Обводка стебля',
+      flowerStroke: 'Обводка цветка',
+      leafStroke: 'Обводка листвы',
+      strokeThickness: 'Толщина',
+      randomize: 'Рандомизация',
+      generate: 'сгенерировать',
+      exportSVG: 'Экспортировать SVG',
+      erase: 'стереть',
+      trunkType: 'Тип ствола:',
+      straightTrunk: 'Прямой',
+      organicTrunk: 'Органический',
+      colorSelection: 'Выбор цвета',
+      customColorLabel: 'Или выберите свой цвет:',
+      centerGradient: 'Градиент центра',
+      mainColor: 'Основной:',
+      gradientColor: 'Градиент:',
+      color: 'Цвет:',
+      saveAs: 'Сохранить как:',
+      shareText: 'Поделись растением на',
+      flowerCenterColor: 'Цвет центра цветка',
+      flowerColorLabel: 'Цвет цветка',
+      cloverStemColor: 'Цвет стебля клевера',
+      sproutsColor: 'Цвет росточков/листьев',
+      petalColor: 'Цвет лепестков',
+      centerColor: 'Цвет центра',
+      stemColor: 'Цвет стебля',
+      leafColorLabel: 'Цвет листвы',
+      leavesColor: 'Цвет листьев',
+      grassGradientStart: 'Начало градиента травы',
+      grassGradientEnd: 'Конец градиента травы',
+      notAvailable: 'Недоступно для этого типа',
+      ok: 'ОК',
+      cancel: 'Отмена'
+    },
+    en: {
+      parameters: 'Parameters',
+      tree: 'Tree',
+      bush: 'Bush',
+      flower: 'Flower',
+      grass: 'Grass',
+      branches: 'Branches',
+      branchLength: 'Branch Length',
+      angle: 'Angle',
+      thickness: 'Thickness',
+      levels: 'Levels',
+      leafSize: 'Leaf Size',
+      leafDensity: 'Leaf Density',
+      petals: 'Petals',
+      centerSize: 'Center Size',
+      quantity: 'Quantity',
+      height: 'Height',
+      curvature: 'Curvature',
+      spread: 'Spread',
+      windDirection: 'Wind Direction',
+      grassType: 'Grass Type:',
+      regularGrass: 'Regular Grass',
+      wheat: 'Wheat',
+      wildGrass: 'Wild Grass',
+      fern: 'Fern',
+      clover: 'Clover',
+      dandelion: 'Dandelion',
+      chamomile: 'Chamomile',
+      cornflower: 'Cornflower',
+      bellflower: 'Bellflower',
+      flowerSize: 'Flower Size',
+      petalCount: 'Petal Count',
+      fluffyDandelion: 'Fluffy Dandelion',
+      bellsPerStem: 'Bells per Stem',
+      stemStroke: 'Stem Stroke',
+      flowerStroke: 'Flower Stroke',
+      leafStroke: 'Leaf Stroke',
+      strokeThickness: 'Thickness',
+      randomize: 'Randomize',
+      generate: 'Generate',
+      exportSVG: 'Export SVG',
+      erase: 'erase',
+      trunkType: 'Trunk Type:',
+      straightTrunk: 'Straight',
+      organicTrunk: 'Organic',
+      colorSelection: 'Color Selection',
+      customColorLabel: 'Or choose your color:',
+      centerGradient: 'Center Gradient',
+      mainColor: 'Main:',
+      gradientColor: 'Gradient:',
+      color: 'Color:',
+      saveAs: 'Save as:',
+      shareText: 'Share your plant on',
+      flowerCenterColor: 'Flower center color',
+      flowerColorLabel: 'Flower color',
+      cloverStemColor: 'Clover stem color',
+      sproutsColor: 'Sprouts/leaves color',
+      petalColor: 'Petal color',
+      centerColor: 'Center color',
+      stemColor: 'Stem color',
+      leafColorLabel: 'Foliage color',
+      leavesColor: 'Leaves color',
+      grassGradientStart: 'Grass gradient start',
+      grassGradientEnd: 'Grass gradient end',
+      notAvailable: 'Not available for this type',
+      ok: 'OK',
+      cancel: 'Cancel'
+    }
+  };
+
+  const t = translations[language]; // Сокращение для удобства
+
   const [params, setParams] = useState({
     branches: 6,
     length: 80,
@@ -242,6 +386,21 @@ const App = () => {
       }));
     }
   }, [params.dandelionFluffy, params.grassType]);
+
+  // Для цветущих видов травы отключаем градиент стебля, для обычной травы включаем
+  useEffect(() => {
+    if (plantType !== 'grass') return;
+
+    const isFlowerGrass = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
+    const shouldUseGradient = !isFlowerGrass;
+
+    if (params.UseGradient !== shouldUseGradient) {
+      setParams(prev => ({
+        ...prev,
+        UseGradient: shouldUseGradient
+      }));
+    }
+  }, [plantType, params.grassType, params.UseGradient]);
 
   // Color picker closes only via OK/Cancel buttons, not by clicking outside
 
@@ -3257,7 +3416,7 @@ const App = () => {
           <>
             <div className="slider-group">
               <label className="slider-label">
-                Количество веток: {params.branches}
+                {t.branches}: {params.branches}
               </label>
               <input
                 type="range"
@@ -3270,7 +3429,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Длина веток: {params.length}
+                {t.branchLength}: {params.length}
               </label>
               <input
                 type="range"
@@ -3283,7 +3442,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Угол веток: {params.angle}°
+                {t.angle}: {params.angle}°
               </label>
               <input
                 type="range"
@@ -3296,7 +3455,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Толщина ствола: {params.thickness}
+                {t.thickness}: {params.thickness}
               </label>
               <input
                 type="range"
@@ -3309,7 +3468,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Уровни ветвления: {params.levels}
+                {t.levels}: {params.levels}
               </label>
               <input
                 type="range"
@@ -3322,7 +3481,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Размер листьев: {params.leafSize}
+                {t.leafSize}: {params.leafSize}
               </label>
               <input
                 type="range"
@@ -3335,7 +3494,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Густота листвы: {Math.round(params.leafDensity * 100)}%
+                {t.leafDensity}: {Math.round(params.leafDensity * 100)}%
               </label>
               <input
                 type="range"
@@ -3354,7 +3513,7 @@ const App = () => {
           <>
             <div className="slider-group">
               <label className="slider-label">
-                Количество веток: {params.branches}
+                {t.branches}: {params.branches}
               </label>
               <input
                 type="range"
@@ -3367,7 +3526,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Длина веток: {params.length}
+                {t.branchLength}: {params.length}
               </label>
               <input
                 type="range"
@@ -3380,7 +3539,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Угол веток: {params.angle}°
+                {t.angle}: {params.angle}°
               </label>
               <input
                 type="range"
@@ -3393,7 +3552,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Толщина веток: {params.thickness}
+                {t.thickness}: {params.thickness}
               </label>
               <input
                 type="range"
@@ -3406,7 +3565,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Уровни ветвления: {params.levels}
+                {t.levels}: {params.levels}
               </label>
               <input
                 type="range"
@@ -3419,7 +3578,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Размер листьев: {params.leafSize}
+                {t.leafSize}: {params.leafSize}
               </label>
               <input
                 type="range"
@@ -3432,7 +3591,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Густота листвы: {Math.round(params.leafDensity * 100)}%
+                {t.leafDensity}: {Math.round(params.leafDensity * 100)}%
               </label>
               <input
                 type="range"
@@ -3451,7 +3610,7 @@ const App = () => {
           <>
             <div className="slider-group">
               <label className="slider-label">
-                Количество лепестков: {params.branches}
+                {t.petals}: {params.branches}
               </label>
               <input
                 type="range"
@@ -3464,7 +3623,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Длина стебля: {params.length}
+                {t.height}: {params.length}
               </label>
               <input
                 type="range"
@@ -3477,7 +3636,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Толщина стебля: {params.thickness}
+                {t.thickness}: {params.thickness}
               </label>
               <input
                 type="range"
@@ -3490,7 +3649,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Размер лепестков: {params.leafSize}
+                {t.petals}: {params.leafSize}
               </label>
               <input
                 type="range"
@@ -3503,7 +3662,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Размер центра: {params.centerSize}
+                {t.centerSize}: {params.centerSize}
               </label>
               <input
                 type="range"
@@ -3523,7 +3682,7 @@ const App = () => {
           <>
             <div className="slider-group">
               <label className="slider-label">
-                Количество: {params.blades}
+                {t.quantity}: {params.blades}
               </label>
               <input
                 type="range"
@@ -3536,7 +3695,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Высота: {params.length}
+                {t.height}: {params.length}
               </label>
               <input
                 type="range"
@@ -3549,7 +3708,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Толщина стебля: {params.thickness}
+                {t.thickness}: {params.thickness}
               </label>
               <input
                 type="range"
@@ -3565,7 +3724,7 @@ const App = () => {
             {!isFlower && (
               <div className="slider-group">
                 <label className="slider-label">
-                  Изгиб: {params.curvature.toFixed(1)}
+                  {t.curvature}: {params.curvature.toFixed(1)}
                 </label>
                 <input
                   type="range"
@@ -3581,7 +3740,7 @@ const App = () => {
 
             <div className="slider-group">
               <label className="slider-label">
-                Разброс: {params.spread}
+                {t.spread}: {params.spread}
               </label>
               <input
                 type="range"
@@ -3594,7 +3753,7 @@ const App = () => {
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                Направление ветра: {params.windDirection}°
+                {t.windDirection}: {params.windDirection}°
               </label>
               <input
                 type="range"
@@ -3611,7 +3770,7 @@ const App = () => {
               <>
                 <div className="slider-group">
                   <label className="slider-label">
-                    Размер цветка: {params.flowerSize}
+                    {t.flowerSize}: {params.flowerSize}
                   </label>
                   <input
                     type="range"
@@ -3627,7 +3786,7 @@ const App = () => {
                  !(params.grassType === 'dandelion' && params.dandelionFluffy) && (
                   <div className="slider-group">
                     <label className="slider-label">
-                      Количество лепестков: {params.petalCount}
+                      {t.petalCount}: {params.petalCount}
                     </label>
                     <input
                       type="range"
@@ -3640,24 +3799,10 @@ const App = () => {
                   </div>
                 )}
 
-                {params.grassType === 'dandelion' && (
-                  <div className="slider-group">
-                    <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span>Пушистый одуванчик</span>
-                      <input
-                        type="checkbox"
-                        checked={params.dandelionFluffy}
-                        onChange={(e) => handleParamChange('dandelionFluffy', e.target.checked)}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                      />
-                    </label>
-                  </div>
-                )}
-
                 {params.grassType === 'bellflower' && (
                   <div className="slider-group">
                     <label className="slider-label">
-                      Колокольчиков на стебле: {params.bellCount}
+                      {t.bellsPerStem}: {params.bellCount}
                     </label>
                     <input
                       type="range"
@@ -3673,113 +3818,128 @@ const App = () => {
             )}
 
             {/* Чекбоксы и настройки обводки - доступны для всех типов травы */}
-            <div className="slider-group">
-              <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span>Обводка стебля</span>
-                <input
-                  type="checkbox"
-                  checked={params.UseStroke}
-                  onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
-                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                />
-              </label>
-              {params.UseStroke && (
-                <>
-                  <input
-                    type="color"
-                    value={params.StrokeColor}
-                    onChange={(e) => handleParamChange('StrokeColor', e.target.value)}
-                    style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
-                  />
-                  <label className="slider-label" style={{ marginTop: '5px' }}>
-                    Толщина: {params.StrokeWidth}
+            <div className="outline-checkboxes">
+              {params.grassType === 'dandelion' && (
+                <div className="slider-group">
+                  <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>{t.fluffyDandelion}</span>
+                    <input
+                      type="checkbox"
+                      checked={params.dandelionFluffy}
+                      onChange={(e) => handleParamChange('dandelionFluffy', e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
                   </label>
+                </div>
+              )}
+              <div className="slider-group">
+                <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span>{t.stemStroke}</span>
                   <input
-                    type="range"
-                    min="0.5"
-                    max="5"
-                    step="0.5"
-                    value={params.StrokeWidth}
-                    onChange={(e) => handleParamChange('StrokeWidth', parseFloat(e.target.value))}
-                    className="slider"
+                    type="checkbox"
+                    checked={params.UseStroke}
+                    onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                   />
-                </>
+                </label>
+                {params.UseStroke && (
+                  <>
+                    <input
+                      type="color"
+                      value={params.StrokeColor}
+                      onChange={(e) => handleParamChange('StrokeColor', e.target.value)}
+                      style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
+                    />
+                    <label className="slider-label" style={{ marginTop: '5px' }}>
+                      {t.strokeThickness}: {params.StrokeWidth}
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="5"
+                      step="0.5"
+                      value={params.StrokeWidth}
+                      onChange={(e) => handleParamChange('StrokeWidth', parseFloat(e.target.value))}
+                      className="slider"
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Обводка цветка - только для цветов, но не для пушистого одуванчика */}
+              {isFlower && !(params.grassType === 'dandelion' && params.dandelionFluffy) && (
+                <div className="slider-group">
+                  <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>{t.flowerStroke}</span>
+                    <input
+                      type="checkbox"
+                      checked={params.flowerUseStroke}
+                      onChange={(e) => handleParamChange('flowerUseStroke', e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                  </label>
+                  {params.flowerUseStroke && (
+                    <>
+                      <input
+                        type="color"
+                        value={params.flowerStrokeColor}
+                        onChange={(e) => handleParamChange('flowerStrokeColor', e.target.value)}
+                        style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
+                      />
+                      <label className="slider-label" style={{ marginTop: '5px' }}>
+                        {t.strokeThickness}: {params.flowerStrokeWidth}
+                      </label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="5"
+                        step="0.5"
+                        value={params.flowerStrokeWidth}
+                        onChange={(e) => handleParamChange('flowerStrokeWidth', parseFloat(e.target.value))}
+                        className="slider"
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Обводка листвы - только для типов с листьями (wheat, fern) или цветов */}
+              {(params.grassType === 'wheat' || params.grassType === 'fern' || isFlower) && (
+                <div className="slider-group">
+                  <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>{t.leafStroke}</span>
+                    <input
+                      type="checkbox"
+                      checked={params.leafUseStroke}
+                      onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                  </label>
+                  {params.leafUseStroke && (
+                    <>
+                      <input
+                        type="color"
+                        value={params.leafStrokeColor || '#006400'}
+                        onChange={(e) => handleParamChange('leafStrokeColor', e.target.value)}
+                        style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
+                      />
+                      <label className="slider-label" style={{ marginTop: '5px' }}>
+                        {t.strokeThickness}: {params.leafStrokeWidth || 1}
+                      </label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="5"
+                        step="0.5"
+                        value={params.leafStrokeWidth || 1}
+                        onChange={(e) => handleParamChange('leafStrokeWidth', parseFloat(e.target.value))}
+                        className="slider"
+                      />
+                    </>
+                  )}
+                </div>
               )}
             </div>
-
-            {/* Обводка цветка - только для цветов, но не для пушистого одуванчика */}
-            {isFlower && !(params.grassType === 'dandelion' && params.dandelionFluffy) && (
-              <div className="slider-group">
-                <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span>Обводка цветка</span>
-                  <input
-                    type="checkbox"
-                    checked={params.flowerUseStroke}
-                    onChange={(e) => handleParamChange('flowerUseStroke', e.target.checked)}
-                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                  />
-                </label>
-                {params.flowerUseStroke && (
-                  <>
-                    <input
-                      type="color"
-                      value={params.flowerStrokeColor}
-                      onChange={(e) => handleParamChange('flowerStrokeColor', e.target.value)}
-                      style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
-                    />
-                    <label className="slider-label" style={{ marginTop: '5px' }}>
-                      Толщина: {params.flowerStrokeWidth}
-                    </label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="5"
-                      step="0.5"
-                      value={params.flowerStrokeWidth}
-                      onChange={(e) => handleParamChange('flowerStrokeWidth', parseFloat(e.target.value))}
-                      className="slider"
-                    />
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Обводка листвы - только для типов с листьями (wheat, fern) или цветов */}
-            {(params.grassType === 'wheat' || params.grassType === 'fern' || isFlower) && (
-              <div className="slider-group">
-                <label className="slider-label" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span>Обводка листвы</span>
-                  <input
-                    type="checkbox"
-                    checked={params.leafUseStroke}
-                    onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
-                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                  />
-                </label>
-                {params.leafUseStroke && (
-                  <>
-                    <input
-                      type="color"
-                      value={params.leafStrokeColor || '#006400'}
-                      onChange={(e) => handleParamChange('leafStrokeColor', e.target.value)}
-                      style={{ marginTop: '5px', width: '40px', height: '30px', cursor: 'pointer' }}
-                    />
-                    <label className="slider-label" style={{ marginTop: '5px' }}>
-                      Толщина: {params.leafStrokeWidth || 1}
-                    </label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="5"
-                      step="0.5"
-                      value={params.leafStrokeWidth || 1}
-                      onChange={(e) => handleParamChange('leafStrokeWidth', parseFloat(e.target.value))}
-                      className="slider"
-                    />
-                  </>
-                )}
-              </div>
-            )}
           </>
         );
       default:
@@ -3847,57 +4007,72 @@ const App = () => {
                       if (isClover) {
                         circle1Color = params.flowerCenterColor;
                         circle1Param = 'flowerCenterColor';
-                        circle1Title = "Цвет центра цветка";
+                        circle1Title = t.flowerCenterColor;
                         circle2Color = params.flowerColor;
                         circle2Param = 'flowerColor';
-                        circle2Title = "Цвет цветка";
+                        circle2Title = t.flowerColorLabel;
                         circle3Color = params.color;
                         circle3Param = 'color';
-                        circle3Title = "Цвет стебля клевера";
+                        circle3Title = t.cloverStemColor;
                         circle4Color = params.leafColor;
                         circle4Param = 'leafColor';
-                        circle4Title = "Цвет росточков/листьев";
+                        circle4Title = t.sproutsColor;
                       } else if (isDandelion) {
                         circle1Color = params.flowerColor;
                         circle1Param = 'flowerColor';
-                        circle1Title = "Цвет лепестков";
+                        circle1Title = t.petalColor;
                         circle2Color = params.flowerCenterColor;
                         circle2Param = 'flowerCenterColor';
-                        circle2Title = "Цвет центра";
+                        circle2Title = t.centerColor;
                         circle3Color = params.color;
                         circle3Param = 'color';
-                        circle3Title = "Цвет стебля";
+                        circle3Title = t.stemColor;
                         circle4Color = params.leafColor;
                         circle4Param = 'leafColor';
-                        circle4Title = "Цвет листвы";
+                        circle4Title = t.leafColorLabel;
                       } else if (isFlower) {
-                        // Для chamomile, cornflower, bellflower
-                        circle1Color = params.leafColor;
-                        circle1Param = 'leafColor';
-                        circle1Title = "Цвет листьев";
-                        circle2Color = params.flowerColor;
-                        circle2Param = 'flowerColor';
-                        circle2Title = "Цвет цветка";
-                        circle3Color = params.flowerCenterColor;
-                        circle3Param = 'flowerCenterColor';
-                        circle3Title = "Цвет центра цветка";
-                        circle4Color = params.color;
-                        circle4Param = 'color';
-                        circle4Title = "Цвет стебля";
+                        if (params.grassType === 'chamomile') {
+                          circle1Color = params.flowerCenterColor;
+                          circle1Param = 'flowerCenterColor';
+                          circle1Title = t.flowerCenterColor;
+                          circle2Color = params.flowerColor;
+                          circle2Param = 'flowerColor';
+                          circle2Title = t.flowerColorLabel;
+                          circle3Color = params.color;
+                          circle3Param = 'color';
+                          circle3Title = t.stemColor;
+                          circle4Color = params.leafColor;
+                          circle4Param = 'leafColor';
+                          circle4Title = t.leavesColor;
+                        } else {
+                          // Для cornflower, bellflower
+                          circle1Color = params.leafColor;
+                          circle1Param = 'leafColor';
+                          circle1Title = t.leavesColor;
+                          circle2Color = params.flowerColor;
+                          circle2Param = 'flowerColor';
+                          circle2Title = t.flowerColorLabel;
+                          circle3Color = params.flowerCenterColor;
+                          circle3Param = 'flowerCenterColor';
+                          circle3Title = t.flowerCenterColor;
+                          circle4Color = params.color;
+                          circle4Param = 'color';
+                          circle4Title = t.stemColor;
+                        }
                       } else {
                         // Для травы (regular, wheat, wild, fern)
                         circle1Color = params.GradientStartColor;
                         circle1Param = 'GradientStartColor';
-                        circle1Title = "Начало градиента травы";
+                        circle1Title = t.grassGradientStart;
                         circle2Color = params.GradientEndColor;
                         circle2Param = 'GradientEndColor';
-                        circle2Title = "Конец градиента травы";
+                        circle2Title = t.grassGradientEnd;
                         circle3Color = '#999';
                         circle3Param = null;
-                        circle3Title = "Недоступно для этого типа";
+                        circle3Title = t.notAvailable;
                         circle4Color = '#999';
                         circle4Param = null;
-                        circle4Title = "Недоступно для этого типа";
+                        circle4Title = t.notAvailable;
                       }
 
                       return (
@@ -4104,12 +4279,39 @@ const App = () => {
 
         {/* Правая панель с параметрами */}
         <aside className="parameters-sidebar">
-          <h2 className="parameters-title">Параметры</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h2 className="parameters-title" style={{ margin: 0 }}>{t.parameters}</h2>
+            <div style={{ display: 'flex', gap: '5px', fontSize: '14px' }}>
+              <span
+                onClick={() => setLanguage('ru')}
+                style={{
+                  cursor: 'pointer',
+                  fontWeight: language === 'ru' ? 'bold' : 'normal',
+                  textDecoration: language === 'ru' ? 'underline' : 'none',
+                  color: language === 'ru' ? '#fff' : '#aaa'
+                }}
+              >
+                RU
+              </span>
+              <span style={{ color: '#666' }}>/</span>
+              <span
+                onClick={() => setLanguage('en')}
+                style={{
+                  cursor: 'pointer',
+                  fontWeight: language === 'en' ? 'bold' : 'normal',
+                  textDecoration: language === 'en' ? 'underline' : 'none',
+                  color: language === 'en' ? '#fff' : '#aaa'
+                }}
+              >
+                EN
+              </span>
+            </div>
+          </div>
 
           {/* Мобильная панель выбора цвета - встроенная в начало параметров */}
           {activeColorPicker && isMobile && (
             <div className="mobile-color-picker-inline">
-              <h3 className="mobile-color-picker-title">Выбор цвета</h3>
+              <h3 className="mobile-color-picker-title">{t.colorSelection}</h3>
               <div className="mobile-color-swatches">
                 {[
                   '#8B4513', '#A0522D', '#DEB887', '#CD853F', '#D2B48C', '#F4A460',
@@ -4123,9 +4325,9 @@ const App = () => {
                     style={{ background: color }}
                     onClick={() => {
                       handleParamChange(activeColorPicker, color);
-                      if (activeColorPicker.includes('leaf')) {
+                      if (activeColorPicker.includes('leaf') && activeColorPicker !== 'leafColor') {
                         handleParamChange('leafUseGradient', true);
-                      } else {
+                      } else if (activeColorPicker.includes('Gradient')) {
                         handleParamChange('UseGradient', true);
                       }
                       setActiveColorPicker(null);
@@ -4134,7 +4336,7 @@ const App = () => {
                 ))}
               </div>
               <div className="mobile-color-custom">
-                <label className="mobile-color-custom-label">Или выберите свой цвет:</label>
+                <label className="mobile-color-custom-label">{t.customColorLabel}</label>
                 <input
                   type="color"
                   value={
@@ -4145,9 +4347,9 @@ const App = () => {
                   }
                   onChange={(e) => {
                     handleParamChange(activeColorPicker, e.target.value);
-                    if (activeColorPicker.includes('leaf')) {
+                    if (activeColorPicker.includes('leaf') && activeColorPicker !== 'leafColor') {
                       handleParamChange('leafUseGradient', true);
-                    } else {
+                    } else if (activeColorPicker.includes('Gradient')) {
                       handleParamChange('UseGradient', true);
                     }
                   }}
@@ -4167,33 +4369,33 @@ const App = () => {
           {/* Селектор типа ствола/травы */}
           {plantType === 'grass' ? (
             <div className="trunk-type-selector">
-              <label className="slider-label">Тип травы:</label>
+              <label className="slider-label">{t.grassType}</label>
               <select
                 value={params.grassType}
                 onChange={(e) => handleParamChange('grassType', e.target.value)}
                 className="trunk-type-dropdown"
               >
-                <option value="regular">Обычная трава</option>
-                <option value="wheat">Пшеница</option>
-                <option value="wild">Дикая трава</option>
-                <option value="fern">Папоротник</option>
-                <option value="clover">Клевер</option>
-                <option value="dandelion">Одуванчик</option>
-                <option value="chamomile">Ромашка</option>
-                <option value="cornflower">Василек</option>
-                <option value="bellflower">Колокольчик</option>
+                <option value="regular">{t.regularGrass}</option>
+                <option value="wheat">{t.wheat}</option>
+                <option value="wild">{t.wildGrass}</option>
+                <option value="fern">{t.fern}</option>
+                <option value="clover">{t.clover}</option>
+                <option value="dandelion">{t.dandelion}</option>
+                <option value="chamomile">{t.chamomile}</option>
+                <option value="cornflower">{t.cornflower}</option>
+                <option value="bellflower">{t.bellflower}</option>
               </select>
             </div>
           ) : (plantType === 'tree' || plantType === 'flower' || plantType === 'bush') ? (
             <div className="trunk-type-selector">
-              <label className="slider-label">Тип ствола:</label>
+              <label className="slider-label">{t.trunkType}</label>
               <select
                 value={params.trunkType}
                 onChange={(e) => handleParamChange('trunkType', e.target.value)}
                 className="trunk-type-dropdown"
               >
-                <option value="straight">Прямой</option>
-                <option value="organic">Органический</option>
+                <option value="straight">{t.straightTrunk}</option>
+                <option value="organic">{t.organicTrunk}</option>
               </select>
             </div>
           ) : null}
@@ -4214,7 +4416,7 @@ const App = () => {
                     onChange={(e) => handleParamChange('UseStroke', e.target.checked)}
                     className="checkbox-input"
                   />
-                  Обводка ствола
+                  {t.stemStroke}
                 </label>
               {params.UseStroke && (
                 <>
@@ -4228,7 +4430,7 @@ const App = () => {
                   </div>
                   <div className="stroke-width-slider">
                     <label className="slider-label-small">
-                      Толщина: {params.StrokeWidth}
+                      {t.strokeThickness}: {params.StrokeWidth}
                     </label>
                     <input
                       type="range"
@@ -4252,7 +4454,7 @@ const App = () => {
                   onChange={(e) => handleParamChange('leafUseStroke', e.target.checked)}
                   className="checkbox-input"
                 />
-                Обводка листвы
+                {t.leafStroke}
               </label>
               {params.leafUseStroke && (
                 <>
@@ -4266,7 +4468,7 @@ const App = () => {
                   </div>
                   <div className="stroke-width-slider">
                     <label className="slider-label-small">
-                      Толщина: {params.leafStrokeWidth || 1}
+                      {t.strokeThickness}: {params.leafStrokeWidth || 1}
                     </label>
                     <input
                       type="range"
@@ -4292,18 +4494,18 @@ const App = () => {
                     onChange={(e) => handleParamChange('centerUseGradient', e.target.checked)}
                     className="checkbox-input"
                   />
-                  Градиент центра
+                  {t.centerGradient}
                 </label>
                 {params.centerUseGradient && (
                   <div className="color-picker-panel">
-                    <label className="slider-label-small">Основной:</label>
+                    <label className="slider-label-small">{t.mainColor}</label>
                     <input
                       type="color"
                       value={params.centerGradientStartColor}
                       onChange={(e) => handleParamChange('centerGradientStartColor', e.target.value)}
                       className="color-input-small"
                     />
-                    <label className="slider-label-small">Градиент:</label>
+                    <label className="slider-label-small">{t.gradientColor}</label>
                     <input
                       type="color"
                       value={params.centerGradientEndColor}
@@ -4314,7 +4516,7 @@ const App = () => {
                 )}
                 {!params.centerUseGradient && (
                   <div className="color-picker-panel">
-                    <label className="slider-label-small">Цвет:</label>
+                    <label className="slider-label-small">{t.color}</label>
                     <input
                       type="color"
                       value={params.centerColor}
@@ -4363,7 +4565,7 @@ const App = () => {
               random
             </button>
             <button onClick={() => setRandomSeed(prev => prev + 1)} className="btn-generate">
-              сгенерировать
+              {t.generate}
             </button>
           </div>
 
@@ -4394,14 +4596,14 @@ const App = () => {
 
               {/* Кнопка управления drawing */}
               <div className="drawing-actions">
-                <button onClick={clearDrawing} className="btn-drawing btn-drawing-full">стереть</button>
+                <button onClick={clearDrawing} className="btn-drawing btn-drawing-full">{t.erase}</button>
               </div>
             </>
           )}
 
           {/* Кнопки скачивания */}
           <div className="download-section">
-            <p className="download-label">Сохранить как:</p>
+            <p className="download-label">{t.saveAs}</p>
             <div className="download-buttons">
               <button onClick={downloadPNG} className="btn-download">PNG</button>
               <button onClick={downloadSVG} className="btn-download">SVG</button>
@@ -4410,7 +4612,7 @@ const App = () => {
 
           {/* Ссылка на галерею */}
           <div className="share-section">
-            <p className="share-text">Поделись растением на</p>
+            <p className="share-text">{t.shareText}</p>
             <a href="https://html-garden.vercel.app/" target="_blank" rel="noopener noreferrer" className="share-link">
               <img src="/assets/html-garden.png" alt="HTML Garden" className="share-logo" />
             </a>
