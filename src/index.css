@@ -993,19 +993,19 @@ body::before {
   .mobile-presets {
     display: flex !important;
     justify-content: center;
-    gap: 40px;
+    gap: 30px;
     margin-top: 20px;
     margin-bottom: 40px;
     padding: 0 20px;
   }
 
   .mobile-preset-item {
-    width: 90px;
-    height: 90px;
-    min-width: 90px;
-    min-height: 90px;
-    max-width: 90px;
-    max-height: 90px;
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    min-height: 60px;
+    max-width: 60px;
+    max-height: 60px;
     border-radius: 50%;
     background: #3E462F;
     border: 1px solid #000;
