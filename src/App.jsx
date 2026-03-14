@@ -9,6 +9,9 @@ const App = () => {
   const drawingState = useRef({ isDrawing: false, points: [] });
   const scrollPosition = useRef(0);
   const canvasRect = useRef(null);
+  const lsystemCacheRef = useRef({ key: '', segments: [], maxDist: 1, minY: 0 });
+  const lsystemAnimRef = useRef(null);
+  const lsystemOutlineRef = useRef({ outer: null, inner: null });
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
@@ -31,6 +34,9 @@ const App = () => {
       leafSize: 'Размер листа',
       leafDensity: 'Плотность листвы',
       petals: 'Лепестки',
+      flowerStyle: 'Тип цветка:',
+      flowerStyleClassic: 'Классический',
+      flowerStyleRealistic: 'Реалистичный',
       centerSize: 'Размер центра',
       quantity: 'Количество',
       height: 'Высота',
@@ -60,6 +66,12 @@ const App = () => {
       exportSVG: 'Экспортировать SVG',
       erase: 'стереть',
       trunkType: 'Тип ствола:',
+      lsystemTrunk: 'L-система',
+      lsysPreset: 'Пресет L-системы',
+      lsysIterations: 'Итерации',
+      lsysStep: 'Шаг',
+      lsysHeight: 'Высота',
+      lsysTrunkType: 'Тип ствола L-системы:',
       straightTrunk: 'Прямой',
       organicTrunk: 'Органический',
       colorSelection: 'Выбор цвета',
@@ -99,6 +111,9 @@ const App = () => {
       leafSize: 'Leaf Size',
       leafDensity: 'Leaf Density',
       petals: 'Petals',
+      flowerStyle: 'Flower style:',
+      flowerStyleClassic: 'Classic',
+      flowerStyleRealistic: 'Realistic',
       centerSize: 'Center Size',
       quantity: 'Quantity',
       height: 'Height',
@@ -128,6 +143,12 @@ const App = () => {
       exportSVG: 'Export SVG',
       erase: 'erase',
       trunkType: 'Trunk Type:',
+      lsystemTrunk: 'L-System',
+      lsysPreset: 'L-System Preset',
+      lsysIterations: 'Iterations',
+      lsysStep: 'Step',
+      lsysHeight: 'Height',
+      lsysTrunkType: 'L-System Trunk:',
       straightTrunk: 'Straight',
       organicTrunk: 'Organic',
       colorSelection: 'Color Selection',
@@ -165,13 +186,27 @@ const App = () => {
     levels: 4,
     leafSize: 12,
     leafDensity: 0.7,
+    flowerStyle: 'classic',
     color: '#8B4513',
     leafColor: '#228B22',
     centerColor: '#FFD700',
     centerSize: 10,
 
     // Тип ствола/стебля
-    trunkType: 'straight', // 'straight', 'organic', 'segmented'
+    trunkType: 'straight', // 'straight', 'organic', 'lsystem'
+
+    // L-System параметры (для деревьев)
+    lsysPreset: 'tree',
+    lsysIterations: 4,
+    lsysAngle: 25,
+    lsysStep: 6,
+    lsysTrunkStyle: 'straight',
+    lsysFlowerPreset: 'spray',
+    lsysFlowerIterations: 4,
+    lsysFlowerAngle: 22,
+    lsysFlowerStep: 6,
+    lsysFlowerTrunkStyle: 'organic',
+
 
     // Новые параметры для градиента и обводки
     UseGradient: false,
@@ -424,16 +459,17 @@ const App = () => {
     const centerX = previewSize / 2;
     let centerY;
 
+    
     switch (plantType) {
       case 'tree':
-        // На компьютере дерево выше, на мобильных ниже
+        // ?? ?????????? ?????? ????, ?? ????????? ????
         centerY = previewSize * (isMobile ? 0.85 : 0.80);
         break;
       case 'flower':
         centerY = previewSize * 0.75;
         break;
       case 'bush':
-        centerY = previewSize * 0.55;
+        centerY = params.trunkType === 'lsystem' ? previewSize * (isMobile ? 0.85 : 0.80) : previewSize * 0.55;
         break;
       case 'grass':
         centerY = previewSize * 0.75;
@@ -442,24 +478,37 @@ const App = () => {
         centerY = previewSize * (isMobile ? 0.85 : 0.80);
     }
 
+
     const tempSvgElements = [];
     const tempSvgDefs = [];
 
     try {
       if (plantType === 'tree') {
-        drawTree(ctx, centerX, centerY, params.length * 0.8, -Math.PI/2, params.thickness * 0.8, params.levels, tempSvgElements, tempSvgDefs);
+        if (params.trunkType === 'lsystem') {
+          drawLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 0.8);
+        } else {
+          drawTree(ctx, centerX, centerY, params.length * 0.8, -Math.PI/2, params.thickness * 0.8, params.levels, tempSvgElements, tempSvgDefs);
+        }
       } else if (plantType === 'flower') {
-        const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, leafSize: params.leafSize * 0.8, centerSize: params.centerSize * 0.8 };
-        const savedParams = { ...params };
-        Object.assign(params, scaledParams);
-        drawFlower(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
-        Object.assign(params, savedParams);
+        if (params.trunkType === 'lsystem') {
+          drawFlowerLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0.8);
+        } else {
+          const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, leafSize: params.leafSize * 0.8, centerSize: params.centerSize * 0.8 };
+          const savedParams = { ...params };
+          Object.assign(params, scaledParams);
+          drawFlower(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+          Object.assign(params, savedParams);
+        }
       } else if (plantType === 'bush') {
-        const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, leafSize: params.leafSize * 0.8 };
-        const savedParams = { ...params };
-        Object.assign(params, scaledParams);
-        drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
-        Object.assign(params, savedParams);
+        if (params.trunkType === 'lsystem') {
+          drawLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 0.8, { presetKey: 'bush' });
+        } else {
+          const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, leafSize: params.leafSize * 0.8 };
+          const savedParams = { ...params };
+          Object.assign(params, scaledParams);
+          drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+          Object.assign(params, savedParams);
+        }
       } else if (plantType === 'grass') {
         const scaledParams = { ...params, length: params.length * 0.8, thickness: params.thickness * 0.8, spread: params.spread * 0.8 };
         const savedParams = { ...params };
@@ -513,7 +562,7 @@ const App = () => {
         centerY = canvasHeight * 0.75;
         break;
       case 'bush':
-        centerY = canvasHeight * 0.55;
+        centerY = params.trunkType === 'lsystem' ? canvasHeight * (isMobile ? 0.85 : 0.80) : canvasHeight * 0.55;
         break;
       case 'grass':
         centerY = canvasHeight * 0.75;
@@ -522,29 +571,43 @@ const App = () => {
         centerY = canvasHeight * (isMobile ? 0.85 : 0.80);
     }
     
+    
     const tempSvgElements = [];
     const tempSvgDefs = [];
-    
+
     try {
       if (plantType === 'tree') {
-        drawTree(ctx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
+        if (params.trunkType === 'lsystem') {
+          drawLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1);
+        } else {
+          drawTree(ctx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
+        }
       } else if (plantType === 'flower') {
-        drawFlower(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        if (params.trunkType === 'lsystem') {
+          drawFlowerLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 1);
+        } else {
+          drawFlower(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        }
       } else if (plantType === 'bush') {
-        drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        if (params.trunkType === 'lsystem') {
+          drawLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1, { presetKey: 'bush' });
+        } else {
+          drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
+        }
       } else if (plantType === 'grass') {
         drawGrass(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
       }
     } catch (e) {
       console.error('Error generating plant:', e);
     }
-    
+
     setSvgElements(tempSvgElements);
     setSvgDefs(tempSvgDefs);
   }, [plantType, params, getCanvasSize, customLeafPoints, randomSeed]);
 
+        
   const createGradient = (ctx, x1, y1, x2, y2, startColor, endColor, id, svgDefs) => {
-    // Для SVG нужно создавать уникальные градиенты для каждой линии с их координатами
+    // ??? SVG ????? ????????? ?????????? ????????? ??? ?????? ????? ? ?? ????????????
     const gradientId = `grad_${startColor.replace('#', '')}_${endColor.replace('#', '')}_${Math.random().toString(36).substr(2, 6)}`;
 
     svgDefs.push(
@@ -565,6 +628,521 @@ const App = () => {
       return { canvasStyle: null, svgStyle };
     }
   };
+
+  const L_SYSTEM_PRESETS = {
+    tree: {
+      axiom: 'X',
+      rules: {
+        X: 'F-[[X]+X]+F[+FX]-X',
+        F: 'FF'
+      },
+      angle: 25,
+      iterations: 5,
+      step: 6
+    },
+    bush: {
+      axiom: 'F',
+      rules: {
+        F: 'FF-[-F+F+F]+[+F-F-F]'
+      },
+      angle: 22,
+      iterations: 4,
+      step: 6
+    },
+    fern: {
+      axiom: 'X',
+      rules: {
+        X: 'F+[[X]-X]-F[-FX]+X',
+        F: 'FF'
+      },
+      angle: 20,
+      iterations: 5,
+      step: 5
+    }
+  };
+
+  const L_SYSTEM_FLOWER_PRESETS = {
+    spray: {
+      axiom: 'F',
+      rules: {
+        F: 'F[+F]F[-F]F'
+      },
+      angle: 22,
+      iterations: 3,
+      step: 6
+    },
+    bouquet: {
+      axiom: 'X',
+      rules: {
+        X: 'F[+X][-X]FX',
+        F: 'FF'
+      },
+      angle: 20,
+      iterations: 4,
+      step: 5
+    },
+    wild: {
+      axiom: 'X',
+      rules: {
+        X: 'F[+X]F[-X]+X',
+        F: 'FF'
+      },
+      angle: 25,
+      iterations: 4,
+      step: 5
+    }
+  };
+
+  const expandLSystem = (axiom, rules, iterations, maxLength = 90000) => {
+    let current = axiom;
+    for (let i = 0; i < iterations; i++) {
+      let next = '';
+      for (let j = 0; j < current.length; j++) {
+        const ch = current[j];
+        next += rules[ch] || ch;
+        if (next.length >= maxLength) break;
+      }
+      current = next;
+      if (current.length >= maxLength) break;
+    }
+    return current;
+  };
+
+  const buildLSystemSegments = (presetKey, iterations, angleDeg, presetLibrary = L_SYSTEM_PRESETS) => {
+    const preset = presetLibrary[presetKey] || presetLibrary.spray || presetLibrary.tree || L_SYSTEM_PRESETS.tree;
+    const angleRad = (angleDeg ?? preset.angle) * Math.PI / 180;
+    const commands = expandLSystem(preset.axiom, preset.rules, iterations);
+
+    let x = 0;
+    let y = 0;
+    let direction = -Math.PI / 2;
+    const stack = [];
+    const segments = [];
+    let maxDist = 1;
+    let minY = 0;
+
+    for (let i = 0; i < commands.length; i++) {
+      const ch = commands[i];
+      if (ch === 'F') {
+        const nx = x + Math.cos(direction);
+        const ny = y + Math.sin(direction);
+        segments.push({
+          x1: x,
+          y1: y,
+          x2: nx,
+          y2: ny,
+          angle: Math.atan2(ny - y, nx - x),
+          depth: stack.length,
+          index: i
+        });
+        maxDist = Math.max(maxDist, Math.hypot(nx, ny), Math.hypot(x, y));
+        minY = Math.min(minY, ny, y);
+        x = nx;
+        y = ny;
+      } else if (ch === 'f') {
+        x += Math.cos(direction);
+        y += Math.sin(direction);
+        maxDist = Math.max(maxDist, Math.hypot(x, y));
+        minY = Math.min(minY, y);
+      } else if (ch === '+') {
+        direction += angleRad;
+      } else if (ch === '-') {
+        direction -= angleRad;
+      } else if (ch === '[') {
+        stack.push({ x, y, direction });
+      } else if (ch === ']') {
+        const state = stack.pop();
+        if (state) {
+          x = state.x;
+          y = state.y;
+          direction = state.direction;
+        }
+      }
+    }
+
+    const startSet = new Set();
+    for (const seg of segments) {
+      startSet.add(`${seg.x1.toFixed(4)},${seg.y1.toFixed(4)}`);
+    }
+    for (const seg of segments) {
+      const endKey = `${seg.x2.toFixed(4)},${seg.y2.toFixed(4)}`;
+      seg.isTip = !startSet.has(endKey);
+    }
+
+    return { segments, maxDist, minY };
+  };
+
+const rotateAround = (x, y, cx, cy, angle) => {
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+    const dx = x - cx;
+    const dy = y - cy;
+    return [
+      cx + dx * cosA - dy * sinA,
+      cy + dx * sinA + dy * cosA
+    ];
+  };
+
+  const getLSystemCache = (presetKey, iterations, angleDeg, presetLibrary = L_SYSTEM_PRESETS, presetGroup = 'default') => {
+    const key = `${presetGroup}|${presetKey}|${iterations}|${angleDeg}`;
+    if (lsystemCacheRef.current.key !== key) {
+      lsystemCacheRef.current = {
+        key,
+        ...buildLSystemSegments(presetKey, iterations, angleDeg, presetLibrary)
+      };
+    }
+    return lsystemCacheRef.current;
+  };
+
+  
+  const drawLSystem = (ctx, originX, originY, svgElements, svgDefs, timeSeconds = 0, sizeScale = 1, options = {}) => {
+    const config = options || {};
+    const presetKey = config.presetKey ?? params.lsysPreset;
+    const presetLibrary = config.presets ?? L_SYSTEM_PRESETS;
+    const presetGroup = config.presetGroup ?? (presetLibrary === L_SYSTEM_FLOWER_PRESETS ? 'flower' : 'tree');
+    const iterations = config.iterations ?? params.lsysIterations;
+    const angleDeg = config.angle ?? params.lsysAngle;
+    const stepParam = config.step ?? params.lsysStep;
+    const trunkStyle = config.trunkStyle ?? params.lsysTrunkStyle;
+    const tipRenderer = typeof config.tipRenderer === 'function' ? config.tipRenderer : null;
+    const useDefaultLeaves = config.useDefaultLeaves !== false;
+    const leafChance = config.leafChance ?? (useDefaultLeaves ? Math.max(0, Math.min(1, params.leafDensity ?? 0.7)) : 0);
+
+    const { segments, maxDist, minY } = getLSystemCache(presetKey, iterations, angleDeg, presetLibrary, presetGroup);
+    if (!segments.length) return;
+
+    const scale = Math.min(screenSize.width || 600, 600) / 600;
+    let scaleFactor = 0.95;
+    const width = screenSize.width || 600;
+    if (width <= 470) {
+      scaleFactor = 1.15;
+    } else if (width <= 520) {
+      scaleFactor = 1.05;
+    } else if (width <= 640) {
+      scaleFactor = 0.95;
+    } else if (width <= 768) {
+      scaleFactor = 0.92;
+    } else if (width <= 1024) {
+      scaleFactor = 0.9;
+    }
+
+    const step = Math.max(1.5, Math.min(stepParam * scale * scaleFactor * sizeScale, 18));
+    const baseThickness = Math.max(0.4, Math.min(params.thickness * scale * scaleFactor * sizeScale, 10));
+    const leafScale = scale * scaleFactor * sizeScale;
+    const topY = originY + minY * step;
+
+    const hasSvg = Array.isArray(svgElements) && Array.isArray(svgDefs);
+    let canvasStroke = params.color;
+    let svgStroke = params.color;
+
+    if (params.UseGradient) {
+      if (hasSvg) {
+        const grad = createGradient(ctx, originX, originY, originX, topY, params.GradientStartColor, params.GradientEndColor, null, svgDefs);
+        canvasStroke = ctx ? grad.canvasStyle : canvasStroke;
+        svgStroke = grad.svgStyle;
+      } else if (ctx) {
+        const grad = ctx.createLinearGradient(originX, originY, originX, topY);
+        grad.addColorStop(0, params.GradientStartColor);
+        grad.addColorStop(1, params.GradientEndColor);
+        canvasStroke = grad;
+      }
+    }
+
+    const windDir = Math.sin((params.windDirection * Math.PI) / 180);
+    const swayStrength = 0.08;
+    const swaySpeed = 0.9;
+    const isOrganic = trunkStyle === 'organic';
+
+    const drawSegments = [];
+    const leafDraws = [];
+    const tipDraws = [];
+
+    const getOrganicControl = (x1, y1, x2, y2, thickness) => {
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const perpAngle = angle + Math.PI / 2;
+      const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+      const randomValue = seededRandom(x1 + y1, x2 + y2) - 0.5;
+      const offset = randomValue * Math.max(length * 0.3, thickness * 3);
+      return {
+        x: midX + Math.cos(perpAngle) * offset,
+        y: midY + Math.sin(perpAngle) * offset
+      };
+    };
+
+    for (const seg of segments) {
+      const depth = seg.depth;
+      const thickness = Math.max(0.3, baseThickness * Math.pow(0.72, depth));
+      const sx = originX + seg.x1 * step;
+      const sy = originY + seg.y1 * step;
+      const ex = originX + seg.x2 * step;
+      const ey = originY + seg.y2 * step;
+
+      const distFactor = Math.min(1, Math.hypot(seg.x2, seg.y2) / maxDist);
+      const phase = depth * 0.25;
+      const bend = Math.sin(timeSeconds * swaySpeed + phase) * swayStrength * windDir * distFactor;
+
+      const baseCtrl = isOrganic ? getOrganicControl(sx, sy, ex, ey, thickness) : null;
+      const [rsx, rsy] = bend ? rotateAround(sx, sy, originX, originY, bend) : [sx, sy];
+      const [rex, rey] = bend ? rotateAround(ex, ey, originX, originY, bend) : [ex, ey];
+      let rcx = null;
+      let rcy = null;
+      if (baseCtrl) {
+        [rcx, rcy] = bend ? rotateAround(baseCtrl.x, baseCtrl.y, originX, originY, bend) : [baseCtrl.x, baseCtrl.y];
+      }
+
+      drawSegments.push({
+        sx: rsx,
+        sy: rsy,
+        ex: rex,
+        ey: rey,
+        thickness,
+        ctrlX: rcx,
+        ctrlY: rcy
+      });
+
+      if (seg.isTip) {
+        if (useDefaultLeaves && leafChance > 0) {
+          const leafRand = seededRandom(seg.x2 * 71.3 + seg.depth * 13.1, seg.y2 * 47.3);
+          if (leafRand <= leafChance) {
+            const jitter = (leafRand - 0.5) * Math.PI * 0.6;
+            const branchAngle = seg.angle + bend;
+            const leafRotation = branchAngle + jitter;
+            const leafX = rex;
+            const leafY = rey;
+            leafDraws.push({
+              x: leafX,
+              y: leafY,
+              rotation: leafRotation,
+              scale: leafScale
+            });
+
+            if (leafChance > 0.85) {
+              const offsetRand = seededRandom(seg.x2 * 17.7, seg.y2 * 29.1) - 0.5;
+              const sideAngle = branchAngle + Math.PI / 2;
+              const offset = offsetRand * step * 0.4;
+              leafDraws.push({
+                x: leafX + Math.cos(sideAngle) * offset,
+                y: leafY + Math.sin(sideAngle) * offset,
+                rotation: leafRotation + offsetRand * 0.3,
+                scale: leafScale * 0.9
+              });
+            }
+          }
+        }
+
+        if (tipRenderer) {
+          tipDraws.push({
+            x: rex,
+            y: rey,
+            angle: seg.angle + bend,
+            depth: seg.depth,
+            scale: leafScale,
+            step
+          });
+        }
+      }
+    }
+
+    const drawSegmentCtx = (targetCtx, segment, strokeStyle, width) => {
+      targetCtx.beginPath();
+      targetCtx.moveTo(segment.sx, segment.sy);
+      if (segment.ctrlX !== null && segment.ctrlY !== null) {
+        targetCtx.quadraticCurveTo(segment.ctrlX, segment.ctrlY, segment.ex, segment.ey);
+      } else {
+        targetCtx.lineTo(segment.ex, segment.ey);
+      }
+      targetCtx.strokeStyle = strokeStyle;
+      targetCtx.lineWidth = width;
+      targetCtx.stroke();
+    };
+
+    if (ctx && params.UseStroke) {
+      const canvasWidth = ctx.canvas.width;
+      const canvasHeight = ctx.canvas.height;
+      let { outer, inner } = lsystemOutlineRef.current;
+      if (!outer || outer.width !== canvasWidth || outer.height !== canvasHeight) {
+        outer = document.createElement('canvas');
+        outer.width = canvasWidth;
+        outer.height = canvasHeight;
+      }
+      if (!inner || inner.width !== canvasWidth || inner.height !== canvasHeight) {
+        inner = document.createElement('canvas');
+        inner.width = canvasWidth;
+        inner.height = canvasHeight;
+      }
+      lsystemOutlineRef.current = { outer, inner };
+
+      const outlineCtx = outer.getContext('2d');
+      const innerCtx = inner.getContext('2d');
+      outlineCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      innerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      outlineCtx.lineCap = 'round';
+      innerCtx.lineCap = 'round';
+
+      for (const segment of drawSegments) {
+        drawSegmentCtx(outlineCtx, segment, params.StrokeColor, segment.thickness + 2 * params.StrokeWidth);
+        drawSegmentCtx(innerCtx, segment, params.StrokeColor, segment.thickness);
+      }
+
+      outlineCtx.globalCompositeOperation = 'destination-out';
+      outlineCtx.drawImage(inner, 0, 0);
+      outlineCtx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(outer, 0, 0);
+    }
+
+    if (ctx) {
+      ctx.lineCap = 'round';
+      for (const segment of drawSegments) {
+        drawSegmentCtx(ctx, segment, canvasStroke, segment.thickness);
+      }
+    }
+
+    if (hasSvg) {
+      const buildSvgStroke = (segment, strokeWidth, strokeColor) => {
+        if (segment.ctrlX !== null && segment.ctrlY !== null) {
+          return `<path d="M ${segment.sx.toFixed(1)} ${segment.sy.toFixed(1)} Q ${segment.ctrlX.toFixed(1)} ${segment.ctrlY.toFixed(1)} ${segment.ex.toFixed(1)} ${segment.ey.toFixed(1)}" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(2)}" fill="none" stroke-linecap="round" />`;
+        }
+        return `<line x1="${segment.sx.toFixed(1)}" y1="${segment.sy.toFixed(1)}" x2="${segment.ex.toFixed(1)}" y2="${segment.ey.toFixed(1)}" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(2)}" stroke-linecap="round" />`;
+      };
+
+      if (params.UseStroke && ctx) {
+        const maskId = `lsysMask_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const maskWidth = ctx.canvas.width;
+        const maskHeight = ctx.canvas.height;
+        const outerStrokes = drawSegments.map(seg => buildSvgStroke(seg, seg.thickness + 2 * params.StrokeWidth, 'white')).join('\n');
+        const innerStrokes = drawSegments.map(seg => buildSvgStroke(seg, seg.thickness, 'black')).join('\n');
+        const maskDef = `<mask id="${maskId}" maskUnits="userSpaceOnUse" x="0" y="0" width="${maskWidth}" height="${maskHeight}">
+          <rect x="0" y="0" width="${maskWidth}" height="${maskHeight}" fill="black" />
+          ${outerStrokes}
+          ${innerStrokes}
+        </mask>`;
+        svgElements.push({ type: 'defs', content: maskDef });
+        svgElements.push({ type: 'raw', content: `<rect x="0" y="0" width="${maskWidth}" height="${maskHeight}" fill="${params.StrokeColor}" mask="url(#${maskId})" />` });
+      }
+
+      for (const segment of drawSegments) {
+        if (segment.ctrlX !== null && segment.ctrlY !== null) {
+          svgElements.push({
+            type: 'path',
+            d: `M ${segment.sx} ${segment.sy} Q ${segment.ctrlX} ${segment.ctrlY} ${segment.ex} ${segment.ey}`,
+            stroke: svgStroke,
+            fill: 'none',
+            strokeWidth: segment.thickness,
+            strokeLinecap: 'round'
+          });
+        } else {
+          svgElements.push({
+            type: 'line',
+            x1: segment.sx,
+            y1: segment.sy,
+            x2: segment.ex,
+            y2: segment.ey,
+            stroke: svgStroke,
+            strokeWidth: segment.thickness,
+            strokeLinecap: 'round'
+          });
+        }
+      }
+    }
+
+    for (const leaf of leafDraws) {
+      drawLeaf(ctx, leaf.x, leaf.y, svgElements, svgDefs, leaf.scale, leaf.rotation);
+    }
+
+    if (tipRenderer) {
+      const tipContext = {
+        ctx,
+        svgElements,
+        svgDefs,
+        scale,
+        scaleFactor,
+        sizeScale,
+        step,
+        leafScale
+      };
+      for (const tip of tipDraws) {
+        tipRenderer(tip, tipContext);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const isTreeLSystem = plantType === 'tree' && params.trunkType === 'lsystem';
+    const isBushLSystem = plantType === 'bush' && params.trunkType === 'lsystem';
+    if (!(isTreeLSystem || isBushLSystem)) {
+      if (lsystemAnimRef.current) {
+        cancelAnimationFrame(lsystemAnimRef.current);
+        lsystemAnimRef.current = null;
+      }
+      return;
+    }
+
+    const animate = (time) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const { width: canvasWidth, height: canvasHeight } = getCanvasSize();
+      if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+      }
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      const centerX = canvasWidth / 2;
+      const centerY = canvasHeight * (isMobile ? 0.85 : 0.80);
+      if (isBushLSystem) {
+        drawLSystem(ctx, centerX, centerY, null, null, time / 1000, 1, { presetKey: 'bush' });
+      } else {
+        drawLSystem(ctx, centerX, centerY, null, null, time / 1000, 1);
+      }
+
+      lsystemAnimRef.current = requestAnimationFrame(animate);
+    };
+
+    lsystemAnimRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (lsystemAnimRef.current) {
+        cancelAnimationFrame(lsystemAnimRef.current);
+        lsystemAnimRef.current = null;
+      }
+    };
+  }, [
+    plantType,
+    params.trunkType,
+    params.lsysPreset,
+    params.lsysIterations,
+    params.lsysAngle,
+    params.lsysStep,
+    params.lsysTrunkStyle,
+    params.thickness,
+    params.color,
+    params.leafColor,
+    params.leafSize,
+    params.leafDensity,
+    params.leafUseGradient,
+    params.leafGradientStartColor,
+    params.leafGradientEndColor,
+    params.leafUseStroke,
+    params.leafStrokeColor,
+    params.leafStrokeWidth,
+    params.UseGradient,
+    params.GradientStartColor,
+    params.GradientEndColor,
+    params.UseStroke,
+    params.StrokeColor,
+    params.StrokeWidth,
+    params.windDirection,
+    customLeafPoints,
+    screenSize,
+    randomSeed,
+    getCanvasSize,
+    isMobile
+  ]);
 
   // Функция для рисования прямого ствола (текущий вариант)
   const drawStraightTrunk = (ctx, x, y, endX, endY, thickness, strokeStyle, svgStroke, useStrokeOutline, strokeOutlineColor, strokeOutlineWidth, svgElements) => {
@@ -782,6 +1360,7 @@ const App = () => {
     let strokeStyle = params.leafStrokeColor;
     let useStroke = params.leafUseStroke;
     let strokeWidth = params.leafStrokeWidth;
+    const hasSvg = Array.isArray(svgElements) && Array.isArray(svgDefs);
 
     if (customLeafPoints.length === 0) {
       // Fallback to ellipse
@@ -813,37 +1392,39 @@ const App = () => {
         ctx.restore();
       }
 
-      // Для SVG - используем общий градиент для всех листьев
-      let svgFill = params.leafColor;
-      if (params.leafUseGradient) {
-        const gradientId = `leafGrad_${params.leafGradientStartColor.replace('#', '')}_${params.leafGradientEndColor.replace('#', '')}`;
-        const existingGradient = svgDefs.find(def => def.includes(`id="${gradientId}"`));
+      if (hasSvg) {
+        // Для SVG - используем общий градиент для всех листьев
+        let svgFill = params.leafColor;
+        if (params.leafUseGradient) {
+          const gradientId = `leafGrad_${params.leafGradientStartColor.replace('#', '')}_${params.leafGradientEndColor.replace('#', '')}`;
+          const existingGradient = svgDefs.find(def => def.includes(`id="${gradientId}"`));
 
-        if (!existingGradient) {
-          svgDefs.push(
-            `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5">
-              <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
-              <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
-            </linearGradient>`
-          );
+          if (!existingGradient) {
+            svgDefs.push(
+              `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5">
+                <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
+                <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
+              </linearGradient>`
+            );
+          }
+          svgFill = `url(#${gradientId})`;
         }
-        svgFill = `url(#${gradientId})`;
+
+        const svgLeaf = {
+          type: 'ellipse',
+          cx: x, cy: y,
+          rx, ry,
+          fill: svgFill,
+          rotation: rotation
+        };
+
+        if (useStroke) {
+          svgLeaf.stroke = strokeStyle;
+          svgLeaf.strokeWidth = strokeWidth;
+        }
+
+        svgElements.push(svgLeaf);
       }
-
-      const svgLeaf = {
-        type: 'ellipse',
-        cx: x, cy: y,
-        rx, ry,
-        fill: svgFill,
-        rotation: rotation
-      };
-
-      if (useStroke) {
-        svgLeaf.stroke = strokeStyle;
-        svgLeaf.strokeWidth = strokeWidth;
-      }
-
-      svgElements.push(svgLeaf);
     } else {
       // ИСПРАВЛЕНО: Custom path с правильным позиционированием и градиентом
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -897,46 +1478,196 @@ const App = () => {
         ctx.restore();
       }
 
-      // Для SVG - используем общий градиент для всех листьев
-      let svgFill = params.leafColor;
-      if (params.leafUseGradient) {
-        const gradientId = `leafGrad_${params.leafGradientStartColor.replace('#', '')}_${params.leafGradientEndColor.replace('#', '')}`;
-        const existingGradient = svgDefs.find(def => def.includes(`id="${gradientId}"`));
+      if (hasSvg) {
+        // Для SVG - используем общий градиент для всех листьев
+        let svgFill = params.leafColor;
+        if (params.leafUseGradient) {
+          const gradientId = `leafGrad_${params.leafGradientStartColor.replace('#', '')}_${params.leafGradientEndColor.replace('#', '')}`;
+          const existingGradient = svgDefs.find(def => def.includes(`id="${gradientId}"`));
 
-        if (!existingGradient) {
-          svgDefs.push(
-            `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5">
-              <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
-              <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
-            </linearGradient>`
-          );
+          if (!existingGradient) {
+            svgDefs.push(
+              `<linearGradient id="${gradientId}" gradientUnits="objectBoundingBox" x1="0" y1="0.5" x2="1" y2="0.5">
+                <stop offset="0%" stop-color="${params.leafGradientStartColor}" />
+                <stop offset="100%" stop-color="${params.leafGradientEndColor}" />
+              </linearGradient>`
+            );
+          }
+          svgFill = `url(#${gradientId})`;
         }
-        svgFill = `url(#${gradientId})`;
-      }
 
-      let d = '';
-      if (customLeafPoints.length > 0) {
-        d = `M ${customLeafPoints[0].x.toFixed(1)} ${customLeafPoints[0].y.toFixed(1)}`;
-        for (let i = 1; i < customLeafPoints.length; i++) {
-          d += ` L ${customLeafPoints[i].x.toFixed(1)} ${customLeafPoints[i].y.toFixed(1)}`;
+        let d = '';
+        if (customLeafPoints.length > 0) {
+          d = `M ${customLeafPoints[0].x.toFixed(1)} ${customLeafPoints[0].y.toFixed(1)}`;
+          for (let i = 1; i < customLeafPoints.length; i++) {
+            d += ` L ${customLeafPoints[i].x.toFixed(1)} ${customLeafPoints[i].y.toFixed(1)}`;
+          }
+          d += ' Z';
         }
-        d += ' Z';
-      }
 
-      const svgLeaf = {
+        const svgLeaf = {
+          type: 'path',
+          d,
+          fill: svgFill,
+          transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rotDeg.toFixed(1)}) scale(${leafScale.toFixed(3)} ${leafScale.toFixed(3)}) translate(${(-shapeCenterX).toFixed(1)} ${(-shapeCenterY).toFixed(1)})`
+        };
+
+        if (useStroke) {
+          svgLeaf.stroke = strokeStyle;
+          svgLeaf['stroke-width'] = strokeWidth.toFixed(2);
+          svgLeaf['vector-effect'] = 'non-scaling-stroke';
+        }
+
+        svgElements.push(svgLeaf);
+      }
+    }
+  };
+
+  
+  const drawPetalShape = (ctx, centerX, centerY, length, width, angle, fill, stroke, strokeWidth, svgElements) => {
+    const pathD = `M 0 0 Q ${width.toFixed(2)} ${(-length * 0.35).toFixed(2)} 0 ${(-length).toFixed(2)} Q ${(-width).toFixed(2)} ${(-length * 0.35).toFixed(2)} 0 0 Z`;
+
+    if (ctx) {
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(width, -length * 0.35, 0, -length);
+      ctx.quadraticCurveTo(-width, -length * 0.35, 0, 0);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = strokeWidth;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if (Array.isArray(svgElements)) {
+      const svgPetal = {
         type: 'path',
-        d,
-        fill: svgFill,
-        transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rotDeg.toFixed(1)}) scale(${leafScale.toFixed(3)} ${leafScale.toFixed(3)}) translate(${(-shapeCenterX).toFixed(1)} ${(-shapeCenterY).toFixed(1)})`
+        d: pathD,
+        fill,
+        transform: `translate(${centerX.toFixed(1)} ${centerY.toFixed(1)}) rotate(${(angle * 180 / Math.PI).toFixed(1)})`
+      };
+      if (stroke) {
+        svgPetal.stroke = stroke;
+        svgPetal.strokeWidth = strokeWidth;
+      }
+      svgElements.push(svgPetal);
+    }
+  };
+
+  const drawRealisticPetals = (ctx, centerX, centerY, svgElements, scale, scaleFactor, rotationOffset, sizeScale) => {
+    const petalCount = Math.max(4, Math.min(params.branches, 18));
+    const baseLength = params.leafSize * 2.0 * scale * scaleFactor * sizeScale;
+    const baseWidth = baseLength * 0.45;
+    const useGradient = params.leafUseGradient;
+    const baseColor = useGradient ? params.leafGradientEndColor : (params.leafColor || '#E9B7D0');
+    const highlightColor = useGradient ? params.leafGradientStartColor : lightenColor(baseColor, 35);
+    const midColor = useGradient ? lightenColor(params.leafGradientEndColor, 15) : lightenColor(baseColor, 15);
+    const shadowColor = darkenColor(baseColor, 20);
+    const strokeColor = params.leafUseStroke ? (params.leafStrokeColor || darkenColor(baseColor, 25)) : null;
+    const strokeWidth = params.leafStrokeWidth || 1;
+
+    for (let i = 0; i < petalCount; i++) {
+      const rand = seededRandom(centerX + i * 71.7, centerY + i * 23.3);
+      const angle = (i * Math.PI * 2) / petalCount + rotationOffset + (rand - 0.5) * 0.25;
+      const length = baseLength * (0.85 + rand * 0.3);
+      const width = baseWidth * (0.8 + rand * 0.4);
+      drawPetalShape(ctx, centerX, centerY, length, width, angle, shadowColor, strokeColor, strokeWidth, svgElements);
+      drawPetalShape(ctx, centerX, centerY, length * 0.65, width * 0.55, angle, highlightColor, null, 0, svgElements);
+    }
+
+    const innerCount = Math.max(3, Math.round(petalCount * 0.6));
+    const innerLength = baseLength * 0.65;
+    const innerWidth = baseWidth * 0.55;
+    for (let i = 0; i < innerCount; i++) {
+      const rand = seededRandom(centerX + 500 + i * 41.2, centerY + i * 19.1);
+      const angle = (i * Math.PI * 2) / innerCount + rotationOffset + Math.PI / innerCount + (rand - 0.5) * 0.2;
+      const length = innerLength * (0.9 + rand * 0.2);
+      const width = innerWidth * (0.8 + rand * 0.3);
+      drawPetalShape(ctx, centerX, centerY, length, width, angle, midColor, strokeColor, strokeWidth * 0.8, svgElements);
+    }
+  };
+
+  const drawFlowerHead = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor, rotationOffset = 0, sizeScale = 1) => {
+    const petals = Math.max(3, Math.min(params.branches, 18));
+
+    if (params.flowerStyle === 'realistic') {
+      drawRealisticPetals(ctx, centerX, centerY, svgElements, scale, scaleFactor, rotationOffset, sizeScale);
+    } else {
+      const petalOffset = params.leafSize * 1.5 * scale * scaleFactor * sizeScale;
+
+      // Адаптивный размер лепестка для разных экранов
+      let leafScale = 1;
+      const width = screenSize.width || 600;
+      if (width <= 470) {
+        leafScale = 1.21; // маленькие телефоны
+      } else if (width <= 520) {
+        leafScale = 1.1; // средние телефоны
+      } else if (width <= 640) {
+        leafScale = 1.0; // большие телефоны
+      } else if (width <= 768) {
+        leafScale = 0.97; // маленькие планшеты
+      } else if (width <= 1024) {
+        leafScale = 0.95; // большие планшеты/маленькие ноутбуки
+      }
+
+      for (let i = 0; i < petals; i++) {
+        const angle = (i * Math.PI * 2) / petals + rotationOffset;
+        const petalX = centerX + Math.cos(angle) * petalOffset;
+        const petalY = centerY + Math.sin(angle) * petalOffset;
+        // Лепестки: используем форму листа/кастомный контур
+        drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale * leafScale * sizeScale, angle + Math.PI/2);
+      }
+    }
+
+    const centerRadius = Math.max(3 * sizeScale, Math.min(params.centerSize * scale * scaleFactor * sizeScale, 23.75 * sizeScale));
+    let centerFillStyle = params.centerColor;
+    let svgCenterFill = params.centerColor;
+    let centerStrokeStyle = params.centerStrokeColor;
+    let centerUseStroke = params.centerUseStroke;
+    let centerStrokeWidth = params.centerStrokeWidth;
+
+    if (params.centerUseGradient) {
+      const gradientId = `centerGrad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const grad = createGradient(ctx, centerX - centerRadius, centerY, centerX + centerRadius, centerY, params.centerGradientStartColor, params.centerGradientEndColor, gradientId, svgDefs);
+      centerFillStyle = grad.canvasStyle;
+      svgCenterFill = grad.svgStyle;
+    }
+
+    if (ctx) {
+      ctx.fillStyle = centerFillStyle;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (centerUseStroke) {
+        ctx.strokeStyle = centerStrokeStyle;
+        ctx.lineWidth = centerStrokeWidth;
+        ctx.stroke();
+      }
+    }
+
+    if (Array.isArray(svgElements)) {
+      const svgCenter = {
+        type: 'circle',
+        cx: centerX,
+        cy: centerY,
+        r: centerRadius,
+        fill: svgCenterFill
       };
 
-      if (useStroke) {
-        svgLeaf.stroke = strokeStyle;
-        svgLeaf['stroke-width'] = strokeWidth.toFixed(2);
-        svgLeaf['vector-effect'] = 'non-scaling-stroke';
+      if (centerUseStroke) {
+        svgCenter.stroke = centerStrokeStyle;
+        svgCenter.strokeWidth = centerStrokeWidth;
       }
 
-      svgElements.push(svgLeaf);
+      svgElements.push(svgCenter);
     }
   };
 
@@ -944,24 +1675,24 @@ const App = () => {
     if (!isFinite(centerX) || !isFinite(centerY)) return;
 
     const scale = Math.min(screenSize.width || 600, 600) / 600;
-    // Адаптивный масштаб в зависимости от ширины экрана
-    let scaleFactor = 0.95; // desktop по умолчанию
+    // ?????????? ??????? ? ??????????? ?? ?????? ??????
+    let scaleFactor = 0.95; // desktop ?? ?????????
     const width = screenSize.width || 600;
     if (width <= 470) {
-      scaleFactor = 1.15; // маленькие телефоны
+      scaleFactor = 1.15; // ????????? ????????
     } else if (width <= 520) {
-      scaleFactor = 1.05; // средние телефоны
+      scaleFactor = 1.05; // ??????? ????????
     } else if (width <= 640) {
-      scaleFactor = 0.95; // большие телефоны
+      scaleFactor = 0.95; // ??????? ????????
     } else if (width <= 768) {
-      scaleFactor = 0.92; // маленькие планшеты
+      scaleFactor = 0.92; // ????????? ????????
     } else if (width <= 1024) {
-      scaleFactor = 0.9; // большие планшеты/маленькие ноутбуки
+      scaleFactor = 0.9; // ??????? ????????/????????? ????????
     }
     const stemLength = Math.max(30, Math.min(params.length * scale * scaleFactor, 237.5));
     const stemEndY = centerY - stemLength;
     const stemThickness = Math.max(2, Math.min(params.thickness * scale * scaleFactor, 14.25));
-    
+
     let stemFillStyle = params.color;
     let svgStemStroke = params.color;
     let stemStrokeStyle = params.StrokeColor;
@@ -975,7 +1706,7 @@ const App = () => {
       svgStemStroke = grad.svgStyle;
     }
 
-    // Рисуем стебель используя выбранный тип ствола
+    // ?????? ??????? ????????? ????????? ??? ??????
     switch (params.trunkType) {
       case 'organic':
         drawOrganicTrunk(ctx, centerX, centerY, centerX, stemEndY, stemThickness, stemFillStyle, svgStemStroke, stemUseStroke, stemStrokeStyle, stemStrokeWidth, svgElements);
@@ -985,71 +1716,39 @@ const App = () => {
         drawStraightTrunk(ctx, centerX, centerY, centerX, stemEndY, stemThickness, stemFillStyle, svgStemStroke, stemUseStroke, stemStrokeStyle, stemStrokeWidth, svgElements);
         break;
     }
-    
-    const petals = Math.max(3, Math.min(params.branches, 15));
-    const petalOffset = params.leafSize * 1.5 * scale * scaleFactor;
 
-    // Адаптивный масштаб листьев для разных экранов
-    let leafScale = 1;
-    if (width <= 470) {
-      leafScale = 1.21; // маленькие телефоны
-    } else if (width <= 520) {
-      leafScale = 1.1; // средние телефоны
-    } else if (width <= 640) {
-      leafScale = 1.0; // большие телефоны
-    } else if (width <= 768) {
-      leafScale = 0.97; // маленькие планшеты
-    } else if (width <= 1024) {
-      leafScale = 0.95; // большие планшеты/маленькие ноутбуки
-    }
+    drawFlowerHead(ctx, centerX, stemEndY, svgElements, svgDefs, scale, scaleFactor, 0, 1);
+  };
 
-    for (let i = 0; i < petals; i++) {
-      const angle = (i * Math.PI * 2) / petals;
-      const petalX = centerX + Math.cos(angle) * petalOffset;
-      const petalY = stemEndY + Math.sin(angle) * petalOffset;
-      // ИСПРАВЛЕНО: правильная ориентация лепестков
-      drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale * leafScale, angle + Math.PI/2);
-    }
 
-    const centerRadius = Math.max(3, Math.min(params.centerSize * scale * scaleFactor, 23.75));
-    let centerFillStyle = params.centerColor;
-    let svgCenterFill = params.centerColor;
-    let centerStrokeStyle = params.centerStrokeColor;
-    let centerUseStroke = params.centerUseStroke;
-    let centerStrokeWidth = params.centerStrokeWidth;
-
-    if (params.centerUseGradient) {
-      const gradientId = `centerGrad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const grad = createGradient(ctx, centerX - centerRadius, stemEndY, centerX + centerRadius, stemEndY, params.centerGradientStartColor, params.centerGradientEndColor, gradientId, svgDefs);
-      centerFillStyle = grad.canvasStyle;
-      svgCenterFill = grad.svgStyle;
-    }
-
-    if (ctx) {
-      ctx.fillStyle = centerFillStyle;
-      ctx.beginPath();
-      ctx.arc(centerX, stemEndY, centerRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (centerUseStroke) {
-        ctx.strokeStyle = centerStrokeStyle;
-        ctx.lineWidth = centerStrokeWidth;
-        ctx.stroke();
+  const drawFlowerLSystem = (ctx, centerX, centerY, svgElements, svgDefs, sizeScale = 1) => {
+    drawLSystem(ctx, centerX, centerY, svgElements, svgDefs, 0, sizeScale, {
+      presets: L_SYSTEM_FLOWER_PRESETS,
+      presetGroup: 'flower',
+      presetKey: params.lsysFlowerPreset,
+      iterations: params.lsysFlowerIterations,
+      angle: params.lsysFlowerAngle,
+      step: params.lsysFlowerStep,
+      trunkStyle: params.lsysFlowerTrunkStyle,
+      useDefaultLeaves: false,
+      tipRenderer: (tip, tipContext) => {
+        const depthScale = Math.max(0.6, 1 - tip.depth * 0.08);
+        const offset = tip.step * 0.15;
+        const flowerX = tip.x + Math.cos(tip.angle) * offset;
+        const flowerY = tip.y + Math.sin(tip.angle) * offset;
+        drawFlowerHead(
+          tipContext.ctx,
+          flowerX,
+          flowerY,
+          tipContext.svgElements,
+          tipContext.svgDefs,
+          tipContext.scale,
+          tipContext.scaleFactor,
+          tip.angle,
+          depthScale
+        );
       }
-    }
-    
-    const svgCenter = {
-      type: 'circle',
-      cx: centerX, cy: stemEndY, r: centerRadius,
-      fill: svgCenterFill
-    };
-
-    if (centerUseStroke) {
-      svgCenter.stroke = centerStrokeStyle;
-      svgCenter.strokeWidth = centerStrokeWidth;
-    }
-
-    svgElements.push(svgCenter);
+    });
   };
 
   const drawBush = (ctx, centerX, centerY, svgElements, svgDefs) => {
@@ -2994,18 +3693,37 @@ const App = () => {
 
     switch (plantType) {
       case 'tree':
-        newParams = {
-          ...newParams,
-          branches: randomBetween(2, 8),
-          length: randomBetween(40, 120),
-          angle: randomBetween(10, 45),
-          thickness: randomBetween(3, 15),
-          levels: randomBetween(2, 6),
-          leafSize: randomBetween(6, 20),
-          leafDensity: randomBetween(0, 10, 1) / 10,
-          color: trunkColor,
-          leafColor: leafColor1
-        };
+        if (params.trunkType === 'lsystem') {
+          const presetKeys = ['tree', 'fern'];
+          const randomPreset = presetKeys[Math.floor(Math.random() * presetKeys.length)];
+          const preset = L_SYSTEM_PRESETS[randomPreset] || L_SYSTEM_PRESETS.tree;
+          newParams = {
+            ...newParams,
+            lsysPreset: randomPreset,
+            lsysIterations: 4,
+            lsysAngle: randomBetween(15, 35),
+            lsysStep: randomBetween(4, 10, 1),
+            lsysTrunkStyle: Math.random() < 0.5 ? 'straight' : 'organic',
+            thickness: randomBetween(1, 7),
+            leafSize: randomBetween(6, 20),
+            leafDensity: randomBetween(0, 10, 1) / 10,
+            color: trunkColor,
+            leafColor: leafColor1
+          };
+        } else {
+          newParams = {
+            ...newParams,
+            branches: randomBetween(2, 8),
+            length: randomBetween(40, 120),
+            angle: randomBetween(10, 45),
+            thickness: randomBetween(3, 15),
+            levels: randomBetween(2, 6),
+            leafSize: randomBetween(6, 20),
+            leafDensity: randomBetween(0, 10, 1) / 10,
+            color: trunkColor,
+            leafColor: leafColor1
+          };
+        }
         break;
       case 'bush':
         newParams = {
@@ -3021,20 +3739,44 @@ const App = () => {
           leafColor: leafColor1
         };
         break;
+      
       case 'flower':
-        newParams = {
-          ...newParams,
-          branches: randomBetween(3, 12),
-          length: randomBetween(50, 150),
-          thickness: randomBetween(2, 10),
-          leafSize: randomBetween(6, 20),
-          centerSize: randomBetween(5, 20),
-          color: trunkColor,
-          leafColor: leafColor1,
-          centerColor: getRandomColor()
-        };
+        if (params.trunkType === 'lsystem') {
+          const presetKeys = Object.keys(L_SYSTEM_FLOWER_PRESETS);
+          const randomPreset = presetKeys[Math.floor(Math.random() * presetKeys.length)];
+          const preset = L_SYSTEM_FLOWER_PRESETS[randomPreset] || L_SYSTEM_FLOWER_PRESETS.spray;
+          newParams = {
+            ...newParams,
+            lsysFlowerPreset: randomPreset,
+            lsysFlowerIterations: randomBetween(2, 5),
+            lsysFlowerAngle: randomBetween(12, 35),
+            lsysFlowerStep: randomBetween(4, 9, 1),
+            lsysFlowerTrunkStyle: Math.random() < 0.6 ? 'organic' : 'straight',
+            flowerStyle: Math.random() < 0.5 ? 'classic' : 'realistic',
+            branches: randomBetween(4, 12),
+            thickness: randomBetween(1, 6),
+            leafSize: randomBetween(6, 20),
+            centerSize: randomBetween(5, 20),
+            color: trunkColor,
+            leafColor: leafColor1,
+            centerColor: getRandomColor()
+          };
+        } else {
+          newParams = {
+            ...newParams,
+            flowerStyle: Math.random() < 0.5 ? 'classic' : 'realistic',
+            branches: randomBetween(3, 12),
+            length: randomBetween(50, 150),
+            thickness: randomBetween(2, 10),
+            leafSize: randomBetween(6, 20),
+            centerSize: randomBetween(5, 20),
+            color: trunkColor,
+            leafColor: leafColor1,
+            centerColor: getRandomColor()
+          };
+        }
         break;
-      case 'grass':
+case 'grass':
         const grassTypes = ['regular', 'wheat', 'wild', 'fern', 'clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'];
         const randomGrassType = grassTypes[Math.floor(Math.random() * grassTypes.length)];
         newParams = {
@@ -3278,7 +4020,7 @@ const App = () => {
           centerY = displayHeight * 0.75;
           break;
         case 'bush':
-          centerY = displayHeight * 0.55;
+          centerY = params.trunkType === 'lsystem' ? displayHeight * (isMobile ? 0.85 : 0.80) : displayHeight * 0.55;
           break;
         case 'grass':
           centerY = displayHeight * 0.75;
@@ -3292,11 +4034,24 @@ const App = () => {
 
       try {
         if (plantType === 'tree') {
-          drawTree(tempCtx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
+          if (params.trunkType === 'lsystem') {
+            drawLSystem(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1);
+          } else {
+            drawTree(tempCtx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
+          }
+        
         } else if (plantType === 'flower') {
-          drawFlower(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+          if (params.trunkType === 'lsystem') {
+            drawFlowerLSystem(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs, 1);
+          } else {
+            drawFlower(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+          }
         } else if (plantType === 'bush') {
-          drawBush(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+          if (params.trunkType === 'lsystem') {
+            drawLSystem(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1, { presetKey: 'bush' });
+          } else {
+            drawBush(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
+          }
         } else if (plantType === 'grass') {
           drawGrass(tempCtx, centerX, centerY, tempSvgElements, tempSvgDefs);
         }
@@ -3310,6 +4065,20 @@ const App = () => {
       link.href = tempCanvas.toDataURL('image/png', 1.0); // Максимальное качество
       link.click();
     };
+
+  // Batch generation API — exposes controls for the external Puppeteer script
+  useEffect(() => {
+    window.__setFlowerConfig = ({ type, newParams, seed }) => {
+      if (type !== undefined) setPlantType(type);
+      if (newParams !== undefined) setParams(prev => ({ ...prev, ...newParams }));
+      if (seed !== undefined) setRandomSeed(seed);
+    };
+    window.__getFlowerPNG = () => {
+      const canvas = canvasRef.current;
+      return canvas ? canvas.toDataURL('image/png') : null;
+    };
+    window.__batchAPIReady = true;
+  }, []);
 
   const downloadSVG = () => {
     const svgContent = generateSVG();
@@ -3364,6 +4133,8 @@ const App = () => {
         case 'defs':
           // Специальный тип для вставки градиентов внутрь defs
           return element.content;
+        case 'raw':
+          return element.content || '';
         case 'path':
           let pathStr = `<path d="${element.d}" fill="${element.fill}"`;
           if (element.transform) {
@@ -3412,6 +4183,129 @@ const App = () => {
   const renderSliders = () => {
     switch (plantType) {
       case 'tree':
+        if (params.trunkType === 'lsystem') {
+          return (
+            <>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysPreset}
+                </label>
+                <select
+                  value={params.lsysPreset}
+                  onChange={(e) => {
+                    const presetKey = e.target.value;
+                    const preset = L_SYSTEM_PRESETS[presetKey] || L_SYSTEM_PRESETS.tree;
+                    setParams(prev => ({
+                      ...prev,
+                      lsysPreset: presetKey,
+                      lsysIterations: 4,
+                      lsysAngle: preset.angle,
+                      lsysStep: preset.step
+                    }));
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="tree">{t.tree}</option>
+                  <option value="fern">{t.fern}</option>
+                </select>
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysHeight}: {params.lsysStep}
+                </label>
+                <input
+                  type="range"
+                  min="3"
+                  max="10"
+                  step="0.5"
+                  value={params.lsysStep}
+                  onChange={(e) => handleParamChange('lsysStep', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.angle}: {params.lsysAngle}°
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="40"
+                  value={params.lsysAngle}
+                  onChange={(e) => handleParamChange('lsysAngle', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysTrunkType}
+                </label>
+                <select
+                  value={params.lsysTrunkStyle}
+                  onChange={(e) => handleParamChange('lsysTrunkStyle', e.target.value)}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="straight">{t.straightTrunk}</option>
+                  <option value="organic">{t.organicTrunk}</option>
+                </select>
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.thickness}: {params.thickness}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  value={params.thickness}
+                  onChange={(e) => handleParamChange('thickness', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.leafSize}: {params.leafSize}
+                </label>
+                <input
+                  type="range"
+                  min="6"
+                  max="20"
+                  value={params.leafSize}
+                  onChange={(e) => handleParamChange('leafSize', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.leafDensity}: {Math.round(params.leafDensity * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={params.leafDensity}
+                  onChange={(e) => handleParamChange('leafDensity', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.windDirection}: {params.windDirection}°
+                </label>
+                <input
+                  type="range"
+                  min="-45"
+                  max="45"
+                  value={params.windDirection}
+                  onChange={(e) => handleParamChange('windDirection', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+            </>
+          );
+        }
         return (
           <>
             <div className="slider-group">
@@ -3509,6 +4403,92 @@ const App = () => {
           </>
         );
       case 'bush':
+        if (params.trunkType === 'lsystem') {
+          return (
+            <>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.angle}: {params.lsysAngle}°
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="40"
+                  value={params.lsysAngle}
+                  onChange={(e) => handleParamChange('lsysAngle', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysStep}: {params.lsysStep}
+                </label>
+                <input
+                  type="range"
+                  min="3"
+                  max="8"
+                  step="0.5"
+                  value={params.lsysStep}
+                  onChange={(e) => handleParamChange('lsysStep', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysTrunkType}
+                </label>
+                <select
+                  value={params.lsysTrunkStyle}
+                  onChange={(e) => handleParamChange('lsysTrunkStyle', e.target.value)}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="straight">{t.straightTrunk}</option>
+                  <option value="organic">{t.organicTrunk}</option>
+                </select>
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.thickness}: {params.thickness}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  value={params.thickness}
+                  onChange={(e) => handleParamChange('thickness', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.leafSize}: {params.leafSize}
+                </label>
+                <input
+                  type="range"
+                  min="6"
+                  max="20"
+                  value={params.leafSize}
+                  onChange={(e) => handleParamChange('leafSize', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.leafDensity}: {Math.round(params.leafDensity * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={params.leafDensity}
+                  onChange={(e) => handleParamChange('leafDensity', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+            </>
+          );
+        }
         return (
           <>
             <div className="slider-group">
@@ -3605,9 +4585,171 @@ const App = () => {
             </div>
           </>
         );
+      
       case 'flower':
+        if (params.trunkType === 'lsystem') {
+          return (
+            <>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysPreset}
+                </label>
+                <select
+                  value={params.lsysFlowerPreset}
+                  onChange={(e) => {
+                    const presetKey = e.target.value;
+                    const preset = L_SYSTEM_FLOWER_PRESETS[presetKey] || L_SYSTEM_FLOWER_PRESETS.spray;
+                    setParams(prev => ({
+                      ...prev,
+                      lsysFlowerPreset: presetKey,
+                      lsysFlowerIterations: preset.iterations,
+                      lsysFlowerAngle: preset.angle,
+                      lsysFlowerStep: preset.step
+                    }));
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="spray">Spray</option>
+                  <option value="bouquet">Bouquet</option>
+                  <option value="wild">Wild</option>
+                </select>
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysIterations}: {params.lsysFlowerIterations}
+                </label>
+                <input
+                  type="range"
+                  min="2"
+                  max="6"
+                  value={params.lsysFlowerIterations}
+                  onChange={(e) => handleParamChange('lsysFlowerIterations', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.angle}: {params.lsysFlowerAngle}°
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="40"
+                  value={params.lsysFlowerAngle}
+                  onChange={(e) => handleParamChange('lsysFlowerAngle', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysStep}: {params.lsysFlowerStep}
+                </label>
+                <input
+                  type="range"
+                  min="3"
+                  max="10"
+                  step="0.5"
+                  value={params.lsysFlowerStep}
+                  onChange={(e) => handleParamChange('lsysFlowerStep', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysTrunkType}
+                </label>
+                <select
+                  value={params.lsysFlowerTrunkStyle}
+                  onChange={(e) => handleParamChange('lsysFlowerTrunkStyle', e.target.value)}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="straight">{t.straightTrunk}</option>
+                  <option value="organic">{t.organicTrunk}</option>
+                </select>
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.flowerStyle}
+                </label>
+                <select
+                  value={params.flowerStyle}
+                  onChange={(e) => handleParamChange('flowerStyle', e.target.value)}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="classic">{t.flowerStyleClassic}</option>
+                  <option value="realistic">{t.flowerStyleRealistic}</option>
+                </select>
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.thickness}: {params.thickness}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  value={params.thickness}
+                  onChange={(e) => handleParamChange('thickness', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.petals}: {params.branches}
+                </label>
+                <input
+                  type="range"
+                  min="3"
+                  max="12"
+                  value={params.branches}
+                  onChange={(e) => handleParamChange('branches', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.petals}: {params.leafSize}
+                </label>
+                <input
+                  type="range"
+                  min="6"
+                  max="20"
+                  value={params.leafSize}
+                  onChange={(e) => handleParamChange('leafSize', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.centerSize}: {params.centerSize}
+                </label>
+                <input
+                  type="range"
+                  min="5"
+                  max="20"
+                  value={params.centerSize}
+                  onChange={(e) => handleParamChange('centerSize', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+            </>
+          );
+        }
         return (
           <>
+            <div className="slider-group">
+              <label className="slider-label">
+                {t.flowerStyle}
+              </label>
+              <select
+                value={params.flowerStyle}
+                onChange={(e) => handleParamChange('flowerStyle', e.target.value)}
+                className="trunk-type-dropdown"
+              >
+                <option value="classic">{t.flowerStyleClassic}</option>
+                <option value="realistic">{t.flowerStyleRealistic}</option>
+              </select>
+            </div>
             <div className="slider-group">
               <label className="slider-label">
                 {t.petals}: {params.branches}
@@ -4391,11 +5533,28 @@ const App = () => {
               <label className="slider-label">{t.trunkType}</label>
               <select
                 value={params.trunkType}
-                onChange={(e) => handleParamChange('trunkType', e.target.value)}
+                onChange={(e) => {
+                  const newTrunkType = e.target.value;
+                  if (plantType === 'bush' && newTrunkType === 'lsystem') {
+                    const bushPreset = L_SYSTEM_PRESETS.bush;
+                    setParams(prev => ({
+                      ...prev,
+                      trunkType: newTrunkType,
+                      lsysIterations: bushPreset.iterations,
+                      lsysAngle: bushPreset.angle,
+                      lsysStep: bushPreset.step
+                    }));
+                  } else {
+                    handleParamChange('trunkType', newTrunkType);
+                  }
+                }}
                 className="trunk-type-dropdown"
               >
                 <option value="straight">{t.straightTrunk}</option>
                 <option value="organic">{t.organicTrunk}</option>
+                {(plantType === 'tree' || plantType === 'flower' || plantType === 'bush') && (
+                  <option value="lsystem">{t.lsystemTrunk}</option>
+                )}
               </select>
             </div>
           ) : null}
