@@ -68,6 +68,11 @@ const App = () => {
       bellflower: 'Колокольчик',
       weedA: 'Сорняк (тип A)',
       weedB: 'Сорняк (тип B)',
+      csPlantA: 'Сорняк (тип C)',
+      csPlantB: 'Сорняк (тип D)',
+      csPlantC: 'Сорняк (тип E)',
+      csPlantD: 'Сорняк (тип F)',
+      csPlantE: 'Сорняк (тип G)',
       flowerSize: 'Размер цветка',
       petalCount: 'Количество лепестков',
       fluffyDandelion: 'Пушистый одуванчик',
@@ -166,6 +171,11 @@ const App = () => {
       bellflower: 'Bellflower',
       weedA: 'Weed (type A)',
       weedB: 'Weed (type B)',
+      csPlantA: 'Weed (type C)',
+      csPlantB: 'Weed (type D)',
+      csPlantC: 'Weed (type E)',
+      csPlantD: 'Weed (type F)',
+      csPlantE: 'Weed (type G)',
       flowerSize: 'Flower Size',
       petalCount: 'Petal Count',
       fluffyDandelion: 'Fluffy Dandelion',
@@ -515,7 +525,7 @@ const App = () => {
         centerY = params.trunkType === 'lsystem' ? previewSize * (isMobile ? 0.85 : 0.80) : previewSize * 0.55;
         break;
       case 'grass':
-        centerY = previewSize * 0.75;
+        centerY = params.grassType.startsWith('csPlant') ? previewSize * 0.92 : previewSize * 0.75;
         break;
       default:
         centerY = previewSize * (isMobile ? 0.85 : 0.80);
@@ -608,13 +618,13 @@ const App = () => {
         centerY = params.trunkType === 'lsystem' ? canvasHeight * (isMobile ? 0.85 : 0.80) : canvasHeight * 0.55;
         break;
       case 'grass':
-        centerY = canvasHeight * 0.75;
+        centerY = params.grassType.startsWith('csPlant') ? canvasHeight * 0.92 : canvasHeight * 0.75;
         break;
       default:
         centerY = canvasHeight * (isMobile ? 0.85 : 0.80);
     }
-    
-    
+
+
     const tempSvgElements = [];
     const tempSvgDefs = [];
 
@@ -746,6 +756,90 @@ const App = () => {
     }
   };
 
+  // Контекстно-зависимые L-системы (Hogeweg & Hesper, Figure 1.31)
+  const L_SYSTEM_CS_PRESETS = {
+    csPlantA: {
+      axiom: 'F1F1F1', angle: 22.5, iterations: 30, step: 4,
+      ignore: new Set(['+', '-', 'F']),
+      rules: [
+        { left: '0', symbol: '0', right: '0', replacement: '0' },
+        { left: '0', symbol: '0', right: '1', replacement: '1[+F1F1]' },
+        { left: '0', symbol: '1', right: '0', replacement: '1' },
+        { left: '0', symbol: '1', right: '1', replacement: '1' },
+        { left: '1', symbol: '0', right: '0', replacement: '0' },
+        { left: '1', symbol: '0', right: '1', replacement: '1F1' },
+        { left: '1', symbol: '1', right: '0', replacement: '0' },
+        { left: '1', symbol: '1', right: '1', replacement: '0' },
+        { left: '*', symbol: '+', right: '*', replacement: '-' },
+        { left: '*', symbol: '-', right: '*', replacement: '+' },
+      ]
+    },
+    csPlantB: {
+      axiom: 'F1F1F1', angle: 22.5, iterations: 30, step: 4,
+      ignore: new Set(['+', '-', 'F']),
+      rules: [
+        { left: '0', symbol: '0', right: '0', replacement: '1' },
+        { left: '0', symbol: '0', right: '1', replacement: '1[-F1F1]' },
+        { left: '0', symbol: '1', right: '0', replacement: '1' },
+        { left: '0', symbol: '1', right: '1', replacement: '1' },
+        { left: '1', symbol: '0', right: '0', replacement: '0' },
+        { left: '1', symbol: '0', right: '1', replacement: '1F1' },
+        { left: '1', symbol: '1', right: '0', replacement: '1' },
+        { left: '1', symbol: '1', right: '1', replacement: '0' },
+        { left: '*', symbol: '+', right: '*', replacement: '-' },
+        { left: '*', symbol: '-', right: '*', replacement: '+' },
+      ]
+    },
+    csPlantC: {
+      axiom: 'F1F1F1', angle: 25.75, iterations: 26, step: 4,
+      ignore: new Set(['+', '-', 'F']),
+      rules: [
+        { left: '0', symbol: '0', right: '0', replacement: '0' },
+        { left: '0', symbol: '0', right: '1', replacement: '1' },
+        { left: '0', symbol: '1', right: '0', replacement: '0' },
+        { left: '0', symbol: '1', right: '1', replacement: '1[+F1F1]' },
+        { left: '1', symbol: '0', right: '0', replacement: '0' },
+        { left: '1', symbol: '0', right: '1', replacement: '1F1' },
+        { left: '1', symbol: '1', right: '0', replacement: '0' },
+        { left: '1', symbol: '1', right: '1', replacement: '0' },
+        { left: '*', symbol: '-', right: '*', replacement: '+' },
+        { left: '*', symbol: '+', right: '*', replacement: '-' },
+      ]
+    },
+    csPlantD: {
+      axiom: 'F0F1F1', angle: 25.75, iterations: 24, step: 4,
+      ignore: new Set(['+', '-', 'F']),
+      rules: [
+        { left: '0', symbol: '0', right: '0', replacement: '1' },
+        { left: '0', symbol: '0', right: '1', replacement: '0' },
+        { left: '0', symbol: '1', right: '0', replacement: '0' },
+        { left: '0', symbol: '1', right: '1', replacement: '1F1' },
+        { left: '1', symbol: '0', right: '0', replacement: '1' },
+        { left: '1', symbol: '0', right: '1', replacement: '1[+F1F1]' },
+        { left: '1', symbol: '1', right: '0', replacement: '1' },
+        { left: '1', symbol: '1', right: '1', replacement: '0' },
+        { left: '*', symbol: '+', right: '*', replacement: '-' },
+        { left: '*', symbol: '-', right: '*', replacement: '+' },
+      ]
+    },
+    csPlantE: {
+      axiom: 'F1F1F1', angle: 22.5, iterations: 26, step: 4,
+      ignore: new Set(['+', '-', 'F']),
+      rules: [
+        { left: '0', symbol: '0', right: '0', replacement: '0' },
+        { left: '0', symbol: '0', right: '1', replacement: '1[-F1F1]' },
+        { left: '0', symbol: '1', right: '0', replacement: '1' },
+        { left: '0', symbol: '1', right: '1', replacement: '1' },
+        { left: '1', symbol: '0', right: '0', replacement: '0' },
+        { left: '1', symbol: '0', right: '1', replacement: '1F1' },
+        { left: '1', symbol: '1', right: '0', replacement: '1' },
+        { left: '1', symbol: '1', right: '1', replacement: '0' },
+        { left: '*', symbol: '+', right: '*', replacement: '-' },
+        { left: '*', symbol: '-', right: '*', replacement: '+' },
+      ]
+    },
+  };
+
   const L_SYSTEM_FLOWER_PRESETS = {
     single: {
       // Одиночный изогнутый стебель — одна роза на вершине
@@ -786,10 +880,84 @@ const App = () => {
     return current;
   };
 
+  // Поиск левого контекста (пропуская ignore-символы и скобочные блоки)
+  const matchLeft = (str, pos, leftCtx, ignore) => {
+    if (leftCtx === '*') return true;
+    let i = pos - 1;
+    while (i >= 0) {
+      const c = str[i];
+      if (c === ']') {
+        let depth = 1;
+        i--;
+        while (i >= 0 && depth > 0) {
+          if (str[i] === ']') depth++;
+          else if (str[i] === '[') depth--;
+          i--;
+        }
+        continue;
+      }
+      if (c === '[') { i--; continue; }
+      if (ignore.has(c)) { i--; continue; }
+      return c === leftCtx;
+    }
+    return false;
+  };
+
+  // Поиск правого контекста (пропуская ignore-символы и скобочные блоки)
+  const matchRight = (str, pos, rightCtx, ignore) => {
+    if (rightCtx === '*') return true;
+    let i = pos + 1;
+    while (i < str.length) {
+      const c = str[i];
+      if (c === '[') {
+        let depth = 1;
+        i++;
+        while (i < str.length && depth > 0) {
+          if (str[i] === '[') depth++;
+          else if (str[i] === ']') depth--;
+          i++;
+        }
+        continue;
+      }
+      if (c === ']') { i++; continue; }
+      if (ignore.has(c)) { i++; continue; }
+      return c === rightCtx;
+    }
+    return false;
+  };
+
+  // Расширение контекстно-зависимых L-систем
+  const expandContextSensitiveLSystem = (axiom, rules, iterations, ignore, maxLength = 90000) => {
+    let current = axiom;
+    for (let i = 0; i < iterations; i++) {
+      let next = '';
+      for (let j = 0; j < current.length; j++) {
+        const ch = current[j];
+        let matched = false;
+        for (const rule of rules) {
+          if (rule.symbol !== ch && rule.symbol !== '*') continue;
+          if (matchLeft(current, j, rule.left, ignore) &&
+              matchRight(current, j, rule.right, ignore)) {
+            next += rule.replacement;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) next += ch;
+        if (next.length >= maxLength) break;
+      }
+      current = next;
+      if (current.length >= maxLength) break;
+    }
+    return current;
+  };
+
   const buildLSystemSegments = (presetKey, iterations, angleDeg, presetLibrary = L_SYSTEM_PRESETS) => {
     const preset = presetLibrary[presetKey] || presetLibrary.spray || presetLibrary.tree || L_SYSTEM_PRESETS.tree;
     const angleRad = (angleDeg ?? preset.angle) * Math.PI / 180;
-    const commands = expandLSystem(preset.axiom, preset.rules, iterations);
+    const commands = preset.ignore
+      ? expandContextSensitiveLSystem(preset.axiom, preset.rules, iterations, preset.ignore)
+      : expandLSystem(preset.axiom, preset.rules, iterations);
 
     let x = 0;
     let y = 0;
@@ -904,7 +1072,7 @@ const rotateAround = (x, y, cx, cy, angle) => {
       scaleFactor = 0.9;
     }
 
-    const stepMin = presetGroup === 'grass' ? 0.2 : 1.5;
+    const stepMin = presetGroup === 'csGrass' ? 0.5 : (presetGroup === 'grass' ? 0.2 : 1.5);
     const step = Math.max(stepMin, Math.min(stepParam * scale * scaleFactor * sizeScale, 18));
     const baseThickness = Math.max(0.4, Math.min(params.thickness * scale * scaleFactor * sizeScale, 10));
     const leafScale = scale * scaleFactor * sizeScale;
@@ -1060,15 +1228,25 @@ const rotateAround = (x, y, cx, cy, angle) => {
       outlineCtx.lineCap = 'round';
       innerCtx.lineCap = 'round';
 
+      // Копируем масштаб с основного ctx (для PNG-экспорта 4x)
+      const ctxTransform = ctx.getTransform();
+      outlineCtx.setTransform(ctxTransform);
+      innerCtx.setTransform(ctxTransform);
+
       for (const segment of drawSegments) {
         drawSegmentCtx(outlineCtx, segment, params.StrokeColor, segment.thickness + 2 * params.StrokeWidth);
         drawSegmentCtx(innerCtx, segment, params.StrokeColor, segment.thickness);
       }
 
+      outlineCtx.setTransform(1, 0, 0, 1, 0, 0);
+      innerCtx.setTransform(1, 0, 0, 1, 0, 0);
       outlineCtx.globalCompositeOperation = 'destination-out';
       outlineCtx.drawImage(inner, 0, 0);
       outlineCtx.globalCompositeOperation = 'source-over';
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(outer, 0, 0);
+      ctx.restore();
     }
 
     if (ctx) {
@@ -3384,6 +3562,10 @@ const rotateAround = (x, y, cx, cy, angle) => {
       outlineCtx.lineCap = 'round';
       innerCtx.lineCap = 'round';
 
+      const ctxTransform = ctx.getTransform();
+      outlineCtx.setTransform(ctxTransform);
+      innerCtx.setTransform(ctxTransform);
+
       const segments = 15;
       for (const blade of bladeData) {
         for (let s = 0; s < segments; s++) {
@@ -3411,10 +3593,15 @@ const rotateAround = (x, y, cx, cy, angle) => {
         }
       }
 
+      outlineCtx.setTransform(1, 0, 0, 1, 0, 0);
+      innerCtx.setTransform(1, 0, 0, 1, 0, 0);
       outlineCtx.globalCompositeOperation = 'destination-out';
       outlineCtx.drawImage(inner, 0, 0);
       outlineCtx.globalCompositeOperation = 'source-over';
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(outer, 0, 0);
+      ctx.restore();
     }
 
     if (ctx) {
@@ -3946,6 +4133,22 @@ const rotateAround = (x, y, cx, cy, angle) => {
         });
         break;
       }
+      case 'csPlantA':
+      case 'csPlantB':
+      case 'csPlantC':
+      case 'csPlantD':
+      case 'csPlantE': {
+        const csPreset = L_SYSTEM_CS_PRESETS[params.grassType];
+        drawLSystem(ctx, centerX, centerY, svgElements, svgDefs, 0, 1, {
+          presetKey: params.grassType,
+          presets: L_SYSTEM_CS_PRESETS,
+          iterations: csPreset.iterations,
+          angle: params.lsysAngle || csPreset.angle,
+          step: params.lsysStep || csPreset.step,
+          presetGroup: 'csGrass'
+        });
+        break;
+      }
       default:
         drawGrassRegular(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
         break;
@@ -4314,7 +4517,7 @@ case 'grass':
           centerY = params.trunkType === 'lsystem' ? displayHeight * (isMobile ? 0.85 : 0.80) : displayHeight * 0.55;
           break;
         case 'grass':
-          centerY = displayHeight * 0.75;
+          centerY = params.grassType.startsWith('csPlant') ? displayHeight * 0.92 : displayHeight * 0.75;
           break;
         default:
           centerY = displayHeight * (isMobile ? 0.85 : 0.80);
@@ -5052,10 +5255,12 @@ case 'grass':
           </>
         );
       case 'grass':
-        const isLsysGrass = ['weedA', 'weedB'].includes(params.grassType);
+        const isLsysGrass = ['weedA', 'weedB'].includes(params.grassType) || params.grassType.startsWith('csPlant');
         if (isLsysGrass) {
-          const weedStepMax = params.grassType === 'weedA' ? 1.5 : 6;
-          const weedStepMin = params.grassType === 'weedA' ? 0.3 : 2;
+          const isCSPlant = params.grassType.startsWith('csPlant');
+          const csStepMax = { csPlantA: 5, csPlantB: 9, csPlantC: 5, csPlantD: 4, csPlantE: 9 };
+          const weedStepMax = isCSPlant ? (csStepMax[params.grassType] || 5) : (params.grassType === 'weedA' ? 1.5 : 6);
+          const weedStepMin = isCSPlant ? 1 : (params.grassType === 'weedA' ? 0.3 : 2);
           return (
             <>
               <div className="slider-group">
@@ -5066,7 +5271,7 @@ case 'grass':
                   type="range"
                   min={weedStepMin}
                   max={weedStepMax}
-                  step="0.5"
+                  step={params.grassType === 'weedA' ? "0.1" : "0.5"}
                   value={Math.min(params.lsysStep, weedStepMax)}
                   onChange={(e) => handleParamChange('lsysStep', parseFloat(e.target.value))}
                   className="slider"
@@ -5118,7 +5323,7 @@ case 'grass':
                 <input
                   type="range"
                   min="0"
-                  max={params.grassType === 'weedA' ? "0.15" : "0.3"}
+                  max={params.grassType === 'weedA' || params.grassType.startsWith('csPlant') ? "0.15" : "0.3"}
                   step="0.01"
                   value={params.leafDensity}
                   onChange={(e) => handleParamChange('leafDensity', parseFloat(e.target.value))}
@@ -5441,7 +5646,7 @@ case 'grass':
 
               {/* Цветные кружки */}
               <div className="color-picker-circles">
-                {(plantType === 'grass' && !['weedA', 'weedB'].includes(params.grassType)) ? (
+                {(plantType === 'grass' && !['weedA', 'weedB'].includes(params.grassType) && !params.grassType.startsWith('csPlant')) ? (
                   <>
                     {(() => {
                       const isFlower = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
@@ -5835,6 +6040,9 @@ case 'grass':
                     const preset = L_SYSTEM_PRESETS[val];
                     const density = val === 'weedA' ? 0.05 : 0.1;
                     setParams(prev => ({ ...prev, grassType: val, lsysAngle: preset.angle, lsysStep: preset.step, leafDensity: density }));
+                  } else if (val.startsWith('csPlant')) {
+                    const preset = L_SYSTEM_CS_PRESETS[val];
+                    setParams(prev => ({ ...prev, grassType: val, lsysAngle: preset.angle, lsysStep: preset.step, leafDensity: 0.05 }));
                   } else {
                     handleParamChange('grassType', val);
                   }
@@ -5852,6 +6060,11 @@ case 'grass':
                 <option value="bellflower">{t.bellflower}</option>
                 <option value="weedA">{t.weedA}</option>
                 <option value="weedB">{t.weedB}</option>
+                <option value="csPlantA">{t.csPlantA}</option>
+                <option value="csPlantB">{t.csPlantB}</option>
+                <option value="csPlantC">{t.csPlantC}</option>
+                <option value="csPlantD">{t.csPlantD}</option>
+                <option value="csPlantE">{t.csPlantE}</option>
               </select>
             </div>
           ) : plantType === 'tree' ? (
@@ -5998,7 +6211,7 @@ case 'grass':
           </div>
 
           {/* Чекбоксы обводки (только для tree, flower, bush и L-system сорняков) */}
-          {(plantType !== 'grass' || ['weedA', 'weedB'].includes(params.grassType)) && (
+          {(plantType !== 'grass' || ['weedA', 'weedB'].includes(params.grassType) || params.grassType.startsWith('csPlant')) && (
             <div className="outline-checkboxes">
               <div className="checkbox-item">
                 <label className="checkbox-label">
