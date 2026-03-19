@@ -12,6 +12,7 @@ const App = () => {
   const lsystemCacheRef = useRef({ key: '', segments: [], maxDist: 1, minY: 0 });
   const lsystemAnimRef = useRef(null);
   const lsystemOutlineRef = useRef({ outer: null, inner: null });
+  const grassOutlineRef = useRef({ outer: null, inner: null });
   const [plantType, setPlantType] = useState('tree');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [activeColorPicker, setActiveColorPicker] = useState(null);
@@ -34,9 +35,21 @@ const App = () => {
       leafSize: 'Размер листа',
       leafDensity: 'Плотность листвы',
       petals: 'Лепестки',
-      flowerStyle: 'Тип цветка:',
+      petalSize: 'Размер лепестков',
+      flowerStyle: 'Стиль бутона:',
       flowerStyleClassic: 'Классический',
       flowerStyleRealistic: 'Реалистичный',
+      flowerStyleRose: 'Роза',
+      lsysFlowerSingle: 'Один цветок',
+      lsysFlowerRoseBush: 'Куст цветков',
+      flowerType: 'Тип цветка:',
+      flowerClassic: 'Классический',
+      flowerLsysSingle: 'Одиночный стебель',
+      flowerLsysRoseBush: 'Кустовой',
+      stemStyle: 'Тип стебля:',
+      bushType: 'Тип куста:',
+      bushClassic: 'Классический',
+      bushLsys: 'Ветвистый',
       centerSize: 'Размер центра',
       quantity: 'Количество',
       height: 'Высота',
@@ -53,6 +66,8 @@ const App = () => {
       chamomile: 'Ромашка',
       cornflower: 'Василек',
       bellflower: 'Колокольчик',
+      weedA: 'Сорняк (тип A)',
+      weedB: 'Сорняк (тип B)',
       flowerSize: 'Размер цветка',
       petalCount: 'Количество лепестков',
       fluffyDandelion: 'Пушистый одуванчик',
@@ -66,6 +81,13 @@ const App = () => {
       exportSVG: 'Экспортировать SVG',
       erase: 'стереть',
       trunkType: 'Тип ствола:',
+      treeType: 'Тип дерева:',
+      treeClassic: 'Классическое',
+      treeLsysTree: 'Ветвистое',
+      treeLsysFern: 'Кустистое',
+      treeLsysStilted: 'Стройное',
+      treeLsysSpread: 'Раскидистое',
+      trunkStyle: 'Тип ствола:',
       lsystemTrunk: 'L-система',
       lsysPreset: 'Пресет L-системы',
       lsysIterations: 'Итерации',
@@ -111,9 +133,21 @@ const App = () => {
       leafSize: 'Leaf Size',
       leafDensity: 'Leaf Density',
       petals: 'Petals',
-      flowerStyle: 'Flower style:',
+      petalSize: 'Petal Size',
+      flowerStyle: 'Bud Style:',
       flowerStyleClassic: 'Classic',
       flowerStyleRealistic: 'Realistic',
+      flowerStyleRose: 'Rose',
+      lsysFlowerSingle: 'Single Flower',
+      lsysFlowerRoseBush: 'Flower Bush',
+      flowerType: 'Flower Type:',
+      flowerClassic: 'Classic',
+      flowerLsysSingle: 'Single Stem',
+      flowerLsysRoseBush: 'Bush',
+      stemStyle: 'Stem Style:',
+      bushType: 'Bush Type:',
+      bushClassic: 'Classic',
+      bushLsys: 'Branchy',
       centerSize: 'Center Size',
       quantity: 'Quantity',
       height: 'Height',
@@ -130,6 +164,8 @@ const App = () => {
       chamomile: 'Chamomile',
       cornflower: 'Cornflower',
       bellflower: 'Bellflower',
+      weedA: 'Weed (type A)',
+      weedB: 'Weed (type B)',
       flowerSize: 'Flower Size',
       petalCount: 'Petal Count',
       fluffyDandelion: 'Fluffy Dandelion',
@@ -143,6 +179,13 @@ const App = () => {
       exportSVG: 'Export SVG',
       erase: 'erase',
       trunkType: 'Trunk Type:',
+      treeType: 'Tree Type:',
+      treeClassic: 'Classic',
+      treeLsysTree: 'Branchy',
+      treeLsysFern: 'Bushy',
+      treeLsysStilted: 'Slender',
+      treeLsysSpread: 'Spreading',
+      trunkStyle: 'Trunk Style:',
       lsystemTrunk: 'L-System',
       lsysPreset: 'L-System Preset',
       lsysIterations: 'Iterations',
@@ -201,11 +244,11 @@ const App = () => {
     lsysAngle: 25,
     lsysStep: 6,
     lsysTrunkStyle: 'straight',
-    lsysFlowerPreset: 'spray',
+    lsysFlowerPreset: 'single',
     lsysFlowerIterations: 4,
-    lsysFlowerAngle: 22,
-    lsysFlowerStep: 6,
-    lsysFlowerTrunkStyle: 'organic',
+    lsysFlowerAngle: 8,
+    lsysFlowerStep: 7,
+    lsysFlowerTrunkStyle: 'straight',
 
 
     // Новые параметры для градиента и обводки
@@ -221,7 +264,7 @@ const App = () => {
     leafGradientStartColor: '#228B22',
     leafGradientEndColor: '#32CD32',
     leafUseStroke: false,
-    leafStrokeColor: '#006400',
+    leafStrokeColor: '#000000',
     leafStrokeWidth: 1,
 
     // Для центра цветка
@@ -342,7 +385,7 @@ const App = () => {
           StrokeColor: '#000000',
           StrokeWidth: 1,
           leafUseStroke: false,
-          leafStrokeColor: '#006400',
+          leafStrokeColor: '#000000',
           leafStrokeWidth: 1,
           flowerUseStroke: false,
           flowerStrokeColor: '#000000',
@@ -359,7 +402,7 @@ const App = () => {
           StrokeColor: '#000000',
           StrokeWidth: 1,
           leafUseStroke: false,
-          leafStrokeColor: '#006400',
+          leafStrokeColor: '#000000',
           leafStrokeWidth: 1,
           flowerUseStroke: false,
           flowerStrokeColor: '#000000',
@@ -376,7 +419,7 @@ const App = () => {
           StrokeColor: '#000000',
           StrokeWidth: 1,
           leafUseStroke: false,
-          leafStrokeColor: '#006400',
+          leafStrokeColor: '#000000',
           leafStrokeWidth: 1,
           flowerUseStroke: false,
           flowerStrokeColor: '#000000',
@@ -393,7 +436,7 @@ const App = () => {
           StrokeColor: '#000000',
           StrokeWidth: 1,
           leafUseStroke: false,
-          leafStrokeColor: '#006400',
+          leafStrokeColor: '#000000',
           leafStrokeWidth: 1,
           flowerUseStroke: false,
           flowerStrokeColor: '#000000',
@@ -658,38 +701,73 @@ const App = () => {
       angle: 20,
       iterations: 5,
       step: 5
-    }
-  };
-
-  const L_SYSTEM_FLOWER_PRESETS = {
-    spray: {
-      axiom: 'F',
-      rules: {
-        F: 'F[+F]F[-F]F'
-      },
-      angle: 22,
-      iterations: 3,
-      step: 6
     },
-    bouquet: {
-      axiom: 'X',
-      rules: {
-        X: 'F[+X][-X]FX',
-        F: 'FF'
-      },
-      angle: 20,
-      iterations: 4,
-      step: 5
-    },
-    wild: {
+    // Figure 1.24d — стройное дерево с боковыми ветками
+    stiltedTree: {
       axiom: 'X',
       rules: {
         X: 'F[+X]F[-X]+X',
         F: 'FF'
       },
+      angle: 20,
+      iterations: 7,
+      step: 8
+    },
+    // Figure 1.24e — раскидистое дерево
+    spreadTree: {
+      axiom: 'X',
+      rules: {
+        X: 'F[+X][-X]FX',
+        F: 'FF'
+      },
+      angle: 25.7,
+      iterations: 7,
+      step: 8
+    },
+    // Figure 1.24a — сорняк/трава тип A (3^n высота: очень высокий, нужен малый step)
+    weedA: {
+      axiom: 'F',
+      rules: {
+        F: 'F[+F]F[-F]F'
+      },
+      angle: 25.7,
+      iterations: 5,
+      step: 1
+    },
+    // Figure 1.24b — сорняк/трава тип B (2^n высота: умеренный)
+    weedB: {
+      axiom: 'F',
+      rules: {
+        F: 'F[+F]F[-F][F]'
+      },
+      angle: 20,
+      iterations: 5,
+      step: 4
+    }
+  };
+
+  const L_SYSTEM_FLOWER_PRESETS = {
+    single: {
+      // Одиночный изогнутый стебель — одна роза на вершине
+      axiom: 'X',
+      rules: {
+        X: 'F+X',
+        F: 'FF'
+      },
+      angle: 8,
+      iterations: 5,
+      step: 7
+    },
+    rosebush: {
+      // Куст: ветвящийся стебель, роза на каждом кончике
+      axiom: 'X',
+      rules: {
+        X: 'F[+X][-X]',
+        F: 'FF'
+      },
       angle: 25,
-      iterations: 4,
-      step: 5
+      iterations: 3,
+      step: 6
     }
   };
 
@@ -826,7 +904,8 @@ const rotateAround = (x, y, cx, cy, angle) => {
       scaleFactor = 0.9;
     }
 
-    const step = Math.max(1.5, Math.min(stepParam * scale * scaleFactor * sizeScale, 18));
+    const stepMin = presetGroup === 'grass' ? 0.2 : 1.5;
+    const step = Math.max(stepMin, Math.min(stepParam * scale * scaleFactor * sizeScale, 18));
     const baseThickness = Math.max(0.4, Math.min(params.thickness * scale * scaleFactor * sizeScale, 10));
     const leafScale = scale * scaleFactor * sizeScale;
     const topY = originY + minY * step;
@@ -1594,10 +1673,130 @@ const rotateAround = (x, y, cx, cy, angle) => {
     }
   };
 
+  // Side-view rose — all petals fan UPWARD from the bloom base (cy).
+  // No background oval (it was covering everything).
+  // Outer petals spread wide (±50°), inner petals are nearly vertical.
+  // Overlapping layers dark-outer → light-inner create the depth.
+  const drawRoseHead = (ctx, centerX, centerY, svgElements, scale, scaleFactor, rotationOffset, sizeScale) => {
+    const r = params.leafSize * 1.6 * scale * scaleFactor * sizeScale;
+    const baseColor = params.leafUseGradient
+      ? params.leafGradientEndColor
+      : (params.leafColor || '#C0392B');
+    const sc = params.leafUseStroke
+      ? (params.leafStrokeColor || darkenColor(baseColor, 30))
+      : null;
+    const sw = params.leafStrokeWidth || 0.8;
+
+    // 8 levels from darkest outer to lightest inner
+    const C = [
+      darkenColor(baseColor, 40),   // C[0] outermost
+      darkenColor(baseColor, 28),   // C[1]
+      darkenColor(baseColor, 17),   // C[2]
+      darkenColor(baseColor, 7),    // C[3]
+      baseColor,                    // C[4]
+      lightenColor(baseColor, 12),  // C[5]
+      lightenColor(baseColor, 24),  // C[6]
+      lightenColor(baseColor, 38),  // C[7] innermost bud
+    ];
+
+    const cx = centerX;
+    const cy = centerY;
+    // All petals originate from cy — the calyx base, bloom grows upward from here
+    const bY = cy;
+
+    // Petal from (cx, fromY) pointing at angle from vertical (0=up, PI/2=right)
+    // Fuller bezier shape (0.62 near tip) for a more round, rose-like petal
+    const petal = (fromY, angle, length, width, fill, strokeC, sW) => {
+      const a = angle; // rose always grows upward — branch heading not applied
+      const c1x =  width * 0.96; const c1y = -length * 0.07;
+      const c2x =  width * 0.62; const c2y = -length * 0.78;
+      const c3x = -width * 0.62; const c3y = -length * 0.78;
+      const c4x = -width * 0.96; const c4y = -length * 0.07;
+      if (ctx) {
+        ctx.save();
+        ctx.translate(cx, fromY);
+        ctx.rotate(a);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(c1x, c1y, c2x, c2y, 0, -length);
+        ctx.bezierCurveTo(c3x, c3y, c4x, c4y, 0, 0);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        if (strokeC) { ctx.strokeStyle = strokeC; ctx.lineWidth = sW; ctx.stroke(); }
+        ctx.restore();
+      }
+      if (Array.isArray(svgElements)) {
+        const ad = (a * 180 / Math.PI).toFixed(1);
+        const d = `M 0 0 C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} 0 ${(-length).toFixed(2)} C ${c3x.toFixed(2)} ${c3y.toFixed(2)} ${c4x.toFixed(2)} ${c4y.toFixed(2)} 0 0 Z`;
+        const el = { type: 'path', d, fill, transform: `translate(${cx.toFixed(1)} ${fromY.toFixed(1)}) rotate(${ad})` };
+        if (strokeC) { el.stroke = strokeC; el['stroke-width'] = sW.toFixed(2); }
+        svgElements.push(el);
+      }
+    };
+
+    // Tiny deep-shadow disc at the base — the shadowed interior of the rose
+    if (ctx) {
+      ctx.save(); ctx.beginPath();
+      ctx.arc(cx, bY, r * 0.18, 0, Math.PI * 2);
+      ctx.fillStyle = darkenColor(baseColor, 55); ctx.fill(); ctx.restore();
+    }
+    if (Array.isArray(svgElements)) {
+      svgElements.push({ type: 'circle', cx, cy: bY, r: r * 0.18, fill: darkenColor(baseColor, 55) });
+    }
+
+    const PI = Math.PI;
+
+    // Outer petal pairs: count controlled by params.branches (3–12 → 1–5 pairs)
+    // Pairs fan from outermost (±50°, darkest) down to ±10° (lighter)
+    const nPairs = Math.max(1, Math.min(Math.ceil(params.branches / 2) - 1, 5));
+    const outerAng = PI * 0.278; // 50°
+    const innerAng = PI * 0.056; // 10°
+    for (let i = 0; i < nPairs; i++) {
+      // Draw outer first so inner overlaps (painter's algorithm)
+      const frac = nPairs <= 1 ? 1 : (nPairs - 1 - i) / (nPairs - 1); // 1=outermost
+      const spread = innerAng + frac * (outerAng - innerAng);
+      const len = r * (0.82 + frac * 0.08);
+      const wid = r * (0.38 + frac * 0.08);
+      const colIdx = Math.min(2, Math.round((1 - frac) * 2));
+      petal(bY, -spread, len, wid, C[colIdx], sc, sw * (0.95 + frac * 0.05));
+      petal(bY,  spread, len, wid, C[colIdx], sc, sw * (0.95 + frac * 0.05));
+    }
+
+    // L3: ±22° + tall dark back-center — 3 petals; back-center is the LONGEST (top of rose)
+    petal(bY, -PI * 0.12, r * 0.82, r * 0.39, C[2], sc, sw * 0.90);
+    petal(bY,  0,         r * 0.88, r * 0.40, C[1], sc, sw * 0.88);  // tall dark back-center
+    petal(bY,  PI * 0.12, r * 0.82, r * 0.39, C[2], sc, sw * 0.90);
+
+    // L4: ±13° + center — front-facing petals
+    petal(bY, -PI * 0.07, r * 0.75, r * 0.34, C[3], sc, sw * 0.83);
+    petal(bY,  0,         r * 0.77, r * 0.34, C[3], sc, sw * 0.83);
+    petal(bY,  PI * 0.07, r * 0.75, r * 0.34, C[3], sc, sw * 0.83);
+
+    // L5: ±7° + center
+    petal(bY, -PI * 0.04, r * 0.64, r * 0.27, C[4], sc, sw * 0.74);
+    petal(bY,  0,         r * 0.66, r * 0.27, C[4], sc, sw * 0.74);
+    petal(bY,  PI * 0.04, r * 0.64, r * 0.27, C[4], sc, sw * 0.74);
+
+    // L6: ±3° + center (very tight inner ring)
+    petal(bY, -PI * 0.02, r * 0.50, r * 0.19, C[5], sc, sw * 0.63);
+    petal(bY,  0,         r * 0.52, r * 0.19, C[5], sc, sw * 0.63);
+    petal(bY,  PI * 0.02, r * 0.50, r * 0.19, C[5], sc, sw * 0.63);
+
+    // L7: ±2° — almost vertical
+    petal(bY, -PI * 0.01, r * 0.34, r * 0.12, C[6], sc, sw * 0.50);
+    petal(bY,  PI * 0.01, r * 0.34, r * 0.12, C[6], sc, sw * 0.50);
+
+    // L8: innermost center bud — single lightest petal
+    petal(bY, 0, r * 0.20, r * 0.08, C[7], sc, sw * 0.38);
+  };
+
   const drawFlowerHead = (ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor, rotationOffset = 0, sizeScale = 1) => {
     const petals = Math.max(3, Math.min(params.branches, 18));
 
-    if (params.flowerStyle === 'realistic') {
+    if (params.flowerStyle === 'rose') {
+      drawRoseHead(ctx, centerX, centerY, svgElements, scale, scaleFactor, rotationOffset, sizeScale);
+    } else if (params.flowerStyle === 'realistic') {
       drawRealisticPetals(ctx, centerX, centerY, svgElements, scale, scaleFactor, rotationOffset, sizeScale);
     } else {
       const petalOffset = params.leafSize * 1.5 * scale * scaleFactor * sizeScale;
@@ -1625,6 +1824,9 @@ const rotateAround = (x, y, cx, cy, angle) => {
         drawLeaf(ctx, petalX, petalY, svgElements, svgDefs, scale * leafScale * sizeScale, angle + Math.PI/2);
       }
     }
+
+    // Rose style has its own center (inner bud petals) — skip the universal center circle
+    if (params.flowerStyle === 'rose') return;
 
     const centerRadius = Math.max(3 * sizeScale, Math.min(params.centerSize * scale * scaleFactor * sizeScale, 23.75 * sizeScale));
     let centerFillStyle = params.centerColor;
@@ -3114,6 +3316,7 @@ const rotateAround = (x, y, cx, cy, angle) => {
     const spreadWidth = Math.max(20, Math.min(params.spread * scale * scaleFactor, 150));
     const curvature = Math.max(0.3, Math.min(params.curvature, 1.5));
     const windAngle = (params.windDirection * Math.PI) / 180;
+    const bladeData = [];
 
     for (let i = 0; i < blades; i++) {
       const heightRandom = seededRandom(i * 123, centerX + centerY);
@@ -3144,70 +3347,142 @@ const rotateAround = (x, y, cx, cy, angle) => {
         svgStroke = grad.svgStyle;
       }
 
-      // Рисуем травинку с переменной толщиной (конусообразная)
-      if (ctx) {
-        ctx.lineCap = 'round';
+      bladeData.push({
+        startX,
+        startY,
+        ctrlX,
+        ctrlY,
+        endX,
+        endY,
+        baseThickness,
+        tipThickness,
+        strokeStyle,
+        svgStroke
+      });
+    }
 
-        // Рисуем как последовательность сегментов с убывающей толщиной
-        const segments = 15;
+    if (ctx && params.UseStroke) {
+      const canvasWidth = ctx.canvas.width;
+      const canvasHeight = ctx.canvas.height;
+      let { outer, inner } = grassOutlineRef.current;
+      if (!outer || outer.width !== canvasWidth || outer.height !== canvasHeight) {
+        outer = document.createElement('canvas');
+        outer.width = canvasWidth;
+        outer.height = canvasHeight;
+      }
+      if (!inner || inner.width !== canvasWidth || inner.height !== canvasHeight) {
+        inner = document.createElement('canvas');
+        inner.width = canvasWidth;
+        inner.height = canvasHeight;
+      }
+      grassOutlineRef.current = { outer, inner };
+
+      const outlineCtx = outer.getContext('2d');
+      const innerCtx = inner.getContext('2d');
+      outlineCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      innerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      outlineCtx.lineCap = 'round';
+      innerCtx.lineCap = 'round';
+
+      const segments = 15;
+      for (const blade of bladeData) {
         for (let s = 0; s < segments; s++) {
           const t1 = s / segments;
           const t2 = (s + 1) / segments;
+          const x1 = Math.pow(1 - t1, 2) * blade.startX + 2 * (1 - t1) * t1 * blade.ctrlX + Math.pow(t1, 2) * blade.endX;
+          const y1 = Math.pow(1 - t1, 2) * blade.startY + 2 * (1 - t1) * t1 * blade.ctrlY + Math.pow(t1, 2) * blade.endY;
+          const x2 = Math.pow(1 - t2, 2) * blade.startX + 2 * (1 - t2) * t2 * blade.ctrlX + Math.pow(t2, 2) * blade.endX;
+          const y2 = Math.pow(1 - t2, 2) * blade.startY + 2 * (1 - t2) * t2 * blade.ctrlY + Math.pow(t2, 2) * blade.endY;
+          const thickness = blade.baseThickness * (1 - t1 * 0.8) + blade.tipThickness * t1 * 0.8;
 
-          // Точки на кривой Безье
-          const x1 = Math.pow(1 - t1, 2) * startX + 2 * (1 - t1) * t1 * ctrlX + Math.pow(t1, 2) * endX;
-          const y1 = Math.pow(1 - t1, 2) * startY + 2 * (1 - t1) * t1 * ctrlY + Math.pow(t1, 2) * endY;
-          const x2 = Math.pow(1 - t2, 2) * startX + 2 * (1 - t2) * t2 * ctrlX + Math.pow(t2, 2) * endX;
-          const y2 = Math.pow(1 - t2, 2) * startY + 2 * (1 - t2) * t2 * ctrlY + Math.pow(t2, 2) * endY;
+          outlineCtx.beginPath();
+          outlineCtx.moveTo(x1, y1);
+          outlineCtx.lineTo(x2, y2);
+          outlineCtx.strokeStyle = params.StrokeColor;
+          outlineCtx.lineWidth = thickness + 2 * params.StrokeWidth;
+          outlineCtx.stroke();
 
-          // Толщина убывает к кончику
-          const thickness = baseThickness * (1 - t1 * 0.8) + tipThickness * t1 * 0.8;
+          innerCtx.beginPath();
+          innerCtx.moveTo(x1, y1);
+          innerCtx.lineTo(x2, y2);
+          innerCtx.strokeStyle = params.StrokeColor;
+          innerCtx.lineWidth = thickness;
+          innerCtx.stroke();
+        }
+      }
 
-          if (params.UseStroke) {
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.strokeStyle = params.StrokeColor;
-            ctx.lineWidth = thickness + 2 * params.StrokeWidth;
-            ctx.stroke();
-          }
+      outlineCtx.globalCompositeOperation = 'destination-out';
+      outlineCtx.drawImage(inner, 0, 0);
+      outlineCtx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(outer, 0, 0);
+    }
+
+    if (ctx) {
+      ctx.lineCap = 'round';
+      const segments = 15;
+      for (const blade of bladeData) {
+        for (let s = 0; s < segments; s++) {
+          const t1 = s / segments;
+          const t2 = (s + 1) / segments;
+          const x1 = Math.pow(1 - t1, 2) * blade.startX + 2 * (1 - t1) * t1 * blade.ctrlX + Math.pow(t1, 2) * blade.endX;
+          const y1 = Math.pow(1 - t1, 2) * blade.startY + 2 * (1 - t1) * t1 * blade.ctrlY + Math.pow(t1, 2) * blade.endY;
+          const x2 = Math.pow(1 - t2, 2) * blade.startX + 2 * (1 - t2) * t2 * blade.ctrlX + Math.pow(t2, 2) * blade.endX;
+          const y2 = Math.pow(1 - t2, 2) * blade.startY + 2 * (1 - t2) * t2 * blade.ctrlY + Math.pow(t2, 2) * blade.endY;
+          const thickness = blade.baseThickness * (1 - t1 * 0.8) + blade.tipThickness * t1 * 0.8;
 
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
-          ctx.strokeStyle = strokeStyle;
+          ctx.strokeStyle = blade.strokeStyle;
           ctx.lineWidth = thickness;
           ctx.stroke();
         }
 
         // Центральная жилка (светлее)
         ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        ctx.moveTo(blade.startX, blade.startY);
+        ctx.quadraticCurveTo(blade.ctrlX, blade.ctrlY, blade.endX, blade.endY);
         ctx.strokeStyle = params.UseGradient ? params.GradientEndColor : lightenColor(params.color, 30);
         ctx.lineWidth = 0.5;
         ctx.stroke();
       }
+    }
 
-      // SVG травинка (упрощенная версия)
-      const pathD = `M ${startX.toFixed(1)} ${startY.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`;
+    const bladePaths = bladeData.map(blade => ({
+      d: `M ${blade.startX.toFixed(1)} ${blade.startY.toFixed(1)} Q ${blade.ctrlX.toFixed(1)} ${blade.ctrlY.toFixed(1)} ${blade.endX.toFixed(1)} ${blade.endY.toFixed(1)}`,
+      thickness: blade.baseThickness,
+      svgStroke: blade.svgStroke
+    }));
+
+    if (params.UseStroke && Array.isArray(svgElements)) {
+      const maskId = `grassMask_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      const maskWidth = ctx?.canvas?.width || (screenSize.width || 600);
+      const maskHeight = ctx?.canvas?.height || (screenSize.height || screenSize.width || 600);
+      const outerStrokes = bladePaths.map(blade => `<path d="${blade.d}" stroke="white" stroke-width="${(blade.thickness + 2 * params.StrokeWidth).toFixed(2)}" fill="none" stroke-linecap="round" />`).join('\n');
+      const innerStrokes = bladePaths.map(blade => `<path d="${blade.d}" stroke="black" stroke-width="${blade.thickness.toFixed(2)}" fill="none" stroke-linecap="round" />`).join('\n');
+      const maskDef = `<mask id="${maskId}" maskUnits="userSpaceOnUse" x="0" y="0" width="${maskWidth}" height="${maskHeight}">
+          <rect x="0" y="0" width="${maskWidth}" height="${maskHeight}" fill="black" />
+          ${outerStrokes}
+          ${innerStrokes}
+        </mask>`;
+      svgElements.push({ type: 'defs', content: maskDef });
+      svgElements.push({ type: 'raw', content: `<rect x="0" y="0" width="${maskWidth}" height="${maskHeight}" fill="${params.StrokeColor}" mask="url(#${maskId})" />` });
+    }
+
+    for (const blade of bladePaths) {
       const svgPath = {
         type: 'path',
-        d: pathD,
-        stroke: svgStroke,
+        d: blade.d,
+        stroke: blade.svgStroke,
         fill: 'none',
-        strokeWidth: baseThickness,
+        strokeWidth: blade.thickness,
         strokeLinecap: 'round'
       };
-      if (params.UseStroke) {
-        svgPath.strokeOutline = { color: params.StrokeColor, width: params.StrokeWidth };
-      }
       svgElements.push(svgPath);
 
-      // SVG центральная жилка
       svgElements.push({
         type: 'path',
-        d: pathD,
+        d: blade.d,
         stroke: params.UseGradient ? params.GradientEndColor : lightenColor(params.color, 30),
         fill: 'none',
         strokeWidth: 0.5,
@@ -3659,6 +3934,18 @@ const rotateAround = (x, y, cx, cy, angle) => {
       case 'bellflower':
         drawGrassBellflower(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
         break;
+      case 'weedA':
+      case 'weedB': {
+        const weedPreset = L_SYSTEM_PRESETS[params.grassType];
+        drawLSystem(ctx, centerX, centerY, svgElements, svgDefs, 0, 1, {
+          presetKey: params.grassType,
+          iterations: weedPreset.iterations,
+          angle: params.lsysAngle || weedPreset.angle,
+          step: params.lsysStep || weedPreset.step,
+          presetGroup: 'grass'
+        });
+        break;
+      }
       default:
         drawGrassRegular(ctx, centerX, centerY, svgElements, svgDefs, scale, scaleFactor);
         break;
@@ -3694,7 +3981,7 @@ const rotateAround = (x, y, cx, cy, angle) => {
     switch (plantType) {
       case 'tree':
         if (params.trunkType === 'lsystem') {
-          const presetKeys = ['tree', 'fern'];
+          const presetKeys = ['tree', 'fern', 'stiltedTree', 'spreadTree'];
           const randomPreset = presetKeys[Math.floor(Math.random() * presetKeys.length)];
           const preset = L_SYSTEM_PRESETS[randomPreset] || L_SYSTEM_PRESETS.tree;
           newParams = {
@@ -3744,15 +4031,14 @@ const rotateAround = (x, y, cx, cy, angle) => {
         if (params.trunkType === 'lsystem') {
           const presetKeys = Object.keys(L_SYSTEM_FLOWER_PRESETS);
           const randomPreset = presetKeys[Math.floor(Math.random() * presetKeys.length)];
-          const preset = L_SYSTEM_FLOWER_PRESETS[randomPreset] || L_SYSTEM_FLOWER_PRESETS.spray;
           newParams = {
             ...newParams,
             lsysFlowerPreset: randomPreset,
-            lsysFlowerIterations: randomBetween(2, 5),
-            lsysFlowerAngle: randomBetween(12, 35),
-            lsysFlowerStep: randomBetween(4, 9, 1),
+            lsysFlowerIterations: 4,
+            lsysFlowerAngle: randomBetween(6, 35),
+            lsysFlowerStep: randomBetween(5, 9, 1),
             lsysFlowerTrunkStyle: Math.random() < 0.6 ? 'organic' : 'straight',
-            flowerStyle: Math.random() < 0.5 ? 'classic' : 'realistic',
+            flowerStyle: Math.random() < 0.7 ? 'rose' : 'classic',
             branches: randomBetween(4, 12),
             thickness: randomBetween(1, 6),
             leafSize: randomBetween(6, 20),
@@ -3797,6 +4083,11 @@ case 'grass':
           color: trunkColor,
           leafColor: getRandomColor()
         };
+        if (randomGrassType === 'wild') {
+          newParams.curvature = Math.min(newParams.curvature, 1.3);
+        } else if (randomGrassType === 'regular') {
+          newParams.curvature = Math.min(newParams.curvature, 1.5);
+        }
         break;
     }
 
@@ -4188,35 +4479,12 @@ case 'grass':
             <>
               <div className="slider-group">
                 <label className="slider-label">
-                  {t.lsysPreset}
-                </label>
-                <select
-                  value={params.lsysPreset}
-                  onChange={(e) => {
-                    const presetKey = e.target.value;
-                    const preset = L_SYSTEM_PRESETS[presetKey] || L_SYSTEM_PRESETS.tree;
-                    setParams(prev => ({
-                      ...prev,
-                      lsysPreset: presetKey,
-                      lsysIterations: 4,
-                      lsysAngle: preset.angle,
-                      lsysStep: preset.step
-                    }));
-                  }}
-                  className="trunk-type-dropdown"
-                >
-                  <option value="tree">{t.tree}</option>
-                  <option value="fern">{t.fern}</option>
-                </select>
-              </div>
-              <div className="slider-group">
-                <label className="slider-label">
                   {t.lsysHeight}: {params.lsysStep}
                 </label>
                 <input
                   type="range"
                   min="3"
-                  max="10"
+                  max={['stiltedTree', 'spreadTree'].includes(params.lsysPreset) ? "13" : "10"}
                   step="0.5"
                   value={params.lsysStep}
                   onChange={(e) => handleParamChange('lsysStep', parseFloat(e.target.value))}
@@ -4235,19 +4503,6 @@ case 'grass':
                   onChange={(e) => handleParamChange('lsysAngle', parseInt(e.target.value))}
                   className="slider"
                 />
-              </div>
-              <div className="slider-group">
-                <label className="slider-label">
-                  {t.lsysTrunkType}
-                </label>
-                <select
-                  value={params.lsysTrunkStyle}
-                  onChange={(e) => handleParamChange('lsysTrunkStyle', e.target.value)}
-                  className="trunk-type-dropdown"
-                >
-                  <option value="straight">{t.straightTrunk}</option>
-                  <option value="organic">{t.organicTrunk}</option>
-                </select>
               </div>
               <div className="slider-group">
                 <label className="slider-label">
@@ -4435,19 +4690,6 @@ case 'grass':
               </div>
               <div className="slider-group">
                 <label className="slider-label">
-                  {t.lsysTrunkType}
-                </label>
-                <select
-                  value={params.lsysTrunkStyle}
-                  onChange={(e) => handleParamChange('lsysTrunkStyle', e.target.value)}
-                  className="trunk-type-dropdown"
-                >
-                  <option value="straight">{t.straightTrunk}</option>
-                  <option value="organic">{t.organicTrunk}</option>
-                </select>
-              </div>
-              <div className="slider-group">
-                <label className="slider-label">
                   {t.thickness}: {params.thickness}
                 </label>
                 <input
@@ -4592,38 +4834,15 @@ case 'grass':
             <>
               <div className="slider-group">
                 <label className="slider-label">
-                  {t.lsysPreset}
-                </label>
-                <select
-                  value={params.lsysFlowerPreset}
-                  onChange={(e) => {
-                    const presetKey = e.target.value;
-                    const preset = L_SYSTEM_FLOWER_PRESETS[presetKey] || L_SYSTEM_FLOWER_PRESETS.spray;
-                    setParams(prev => ({
-                      ...prev,
-                      lsysFlowerPreset: presetKey,
-                      lsysFlowerIterations: preset.iterations,
-                      lsysFlowerAngle: preset.angle,
-                      lsysFlowerStep: preset.step
-                    }));
-                  }}
-                  className="trunk-type-dropdown"
-                >
-                  <option value="spray">Spray</option>
-                  <option value="bouquet">Bouquet</option>
-                  <option value="wild">Wild</option>
-                </select>
-              </div>
-              <div className="slider-group">
-                <label className="slider-label">
-                  {t.lsysIterations}: {params.lsysFlowerIterations}
+                  {t.lsysHeight}: {params.lsysFlowerStep}
                 </label>
                 <input
                   type="range"
-                  min="2"
-                  max="6"
-                  value={params.lsysFlowerIterations}
-                  onChange={(e) => handleParamChange('lsysFlowerIterations', parseInt(e.target.value))}
+                  min="3"
+                  max="10"
+                  step="0.5"
+                  value={params.lsysFlowerStep}
+                  onChange={(e) => handleParamChange('lsysFlowerStep', parseFloat(e.target.value))}
                   className="slider"
                 />
               </div>
@@ -4642,42 +4861,34 @@ case 'grass':
               </div>
               <div className="slider-group">
                 <label className="slider-label">
-                  {t.lsysStep}: {params.lsysFlowerStep}
-                </label>
-                <input
-                  type="range"
-                  min="3"
-                  max="10"
-                  step="0.5"
-                  value={params.lsysFlowerStep}
-                  onChange={(e) => handleParamChange('lsysFlowerStep', parseFloat(e.target.value))}
-                  className="slider"
-                />
-              </div>
-              <div className="slider-group">
-                <label className="slider-label">
-                  {t.lsysTrunkType}
-                </label>
-                <select
-                  value={params.lsysFlowerTrunkStyle}
-                  onChange={(e) => handleParamChange('lsysFlowerTrunkStyle', e.target.value)}
-                  className="trunk-type-dropdown"
-                >
-                  <option value="straight">{t.straightTrunk}</option>
-                  <option value="organic">{t.organicTrunk}</option>
-                </select>
-              </div>
-              <div className="slider-group">
-                <label className="slider-label">
                   {t.flowerStyle}
                 </label>
                 <select
                   value={params.flowerStyle}
-                  onChange={(e) => handleParamChange('flowerStyle', e.target.value)}
+                  onChange={(e) => {
+                    const style = e.target.value;
+                    if (style === 'rose') {
+                      setParams(prev => {
+                        const updates = { ...prev, flowerStyle: style, leafSize: 25 };
+                        const isDefaultLeafColor = prev.leafColor === '#228B22';
+                        const isDefaultLeafEnd = prev.leafGradientEndColor === '#32CD32';
+                        const isDefaultColor = prev.color === '#8B4513';
+                        const isDefaultGradEnd = prev.GradientEndColor === '#8B4513';
+                        if (isDefaultLeafColor) updates.leafColor = '#EEABEB';
+                        if (isDefaultLeafEnd) updates.leafGradientEndColor = '#EEABEB';
+                        if (isDefaultColor) updates.color = '#24791D';
+                        if (isDefaultGradEnd) updates.GradientEndColor = '#36BD41';
+                        return updates;
+                      });
+                    } else {
+                      handleParamChange('flowerStyle', style);
+                    }
+                  }}
                   className="trunk-type-dropdown"
                 >
                   <option value="classic">{t.flowerStyleClassic}</option>
                   <option value="realistic">{t.flowerStyleRealistic}</option>
+                  <option value="rose">{t.flowerStyleRose}</option>
                 </select>
               </div>
               <div className="slider-group">
@@ -4708,17 +4919,18 @@ case 'grass':
               </div>
               <div className="slider-group">
                 <label className="slider-label">
-                  {t.petals}: {params.leafSize}
+                  {t.petalSize}: {params.leafSize}
                 </label>
                 <input
                   type="range"
-                  min="6"
-                  max="20"
+                  min="12"
+                  max="30"
                   value={params.leafSize}
                   onChange={(e) => handleParamChange('leafSize', parseInt(e.target.value))}
                   className="slider"
                 />
               </div>
+              {params.flowerStyle !== 'rose' && (
               <div className="slider-group">
                 <label className="slider-label">
                   {t.centerSize}: {params.centerSize}
@@ -4732,6 +4944,7 @@ case 'grass':
                   className="slider"
                 />
               </div>
+              )}
             </>
           );
         }
@@ -4743,11 +4956,30 @@ case 'grass':
               </label>
               <select
                 value={params.flowerStyle}
-                onChange={(e) => handleParamChange('flowerStyle', e.target.value)}
+                onChange={(e) => {
+                  const style = e.target.value;
+                  if (style === 'rose') {
+                    setParams(prev => {
+                      const updates = { ...prev, flowerStyle: style, leafSize: 25 };
+                      const isDefaultLeafColor = prev.leafColor === '#228B22';
+                      const isDefaultLeafEnd = prev.leafGradientEndColor === '#32CD32';
+                      const isDefaultColor = prev.color === '#8B4513';
+                      const isDefaultGradEnd = prev.GradientEndColor === '#8B4513';
+                      if (isDefaultLeafColor) updates.leafColor = '#EEABEB';
+                      if (isDefaultLeafEnd) updates.leafGradientEndColor = '#EEABEB';
+                      if (isDefaultColor) updates.color = '#24791D';
+                      if (isDefaultGradEnd) updates.GradientEndColor = '#36BD41';
+                      return updates;
+                    });
+                  } else {
+                    handleParamChange('flowerStyle', style);
+                  }
+                }}
                 className="trunk-type-dropdown"
               >
                 <option value="classic">{t.flowerStyleClassic}</option>
                 <option value="realistic">{t.flowerStyleRealistic}</option>
+                <option value="rose">{t.flowerStyleRose}</option>
               </select>
             </div>
             <div className="slider-group">
@@ -4791,17 +5023,18 @@ case 'grass':
             </div>
             <div className="slider-group">
               <label className="slider-label">
-                {t.petals}: {params.leafSize}
+                {t.petalSize}: {params.leafSize}
               </label>
               <input
                 type="range"
-                min="6"
-                max="20"
+                min="12"
+                max="30"
                 value={params.leafSize}
                 onChange={(e) => handleParamChange('leafSize', parseInt(e.target.value))}
                 className="slider"
               />
             </div>
+            {params.flowerStyle !== 'rose' && (
             <div className="slider-group">
               <label className="slider-label">
                 {t.centerSize}: {params.centerSize}
@@ -4815,10 +5048,88 @@ case 'grass':
                 className="slider"
               />
             </div>
+            )}
           </>
         );
       case 'grass':
+        const isLsysGrass = ['weedA', 'weedB'].includes(params.grassType);
+        if (isLsysGrass) {
+          const weedStepMax = params.grassType === 'weedA' ? 1.5 : 6;
+          const weedStepMin = params.grassType === 'weedA' ? 0.3 : 2;
+          return (
+            <>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.lsysHeight}: {params.lsysStep}
+                </label>
+                <input
+                  type="range"
+                  min={weedStepMin}
+                  max={weedStepMax}
+                  step="0.5"
+                  value={Math.min(params.lsysStep, weedStepMax)}
+                  onChange={(e) => handleParamChange('lsysStep', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.angle}: {params.lsysAngle}°
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="40"
+                  value={params.lsysAngle}
+                  onChange={(e) => handleParamChange('lsysAngle', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.thickness}: {params.thickness}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  value={params.thickness}
+                  onChange={(e) => handleParamChange('thickness', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.leafSize}: {params.leafSize}
+                </label>
+                <input
+                  type="range"
+                  min="6"
+                  max="20"
+                  value={params.leafSize}
+                  onChange={(e) => handleParamChange('leafSize', parseInt(e.target.value))}
+                  className="slider"
+                />
+              </div>
+              <div className="slider-group">
+                <label className="slider-label">
+                  {t.leafDensity}: {Math.round(params.leafDensity * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max={params.grassType === 'weedA' ? "0.15" : "0.3"}
+                  step="0.01"
+                  value={params.leafDensity}
+                  onChange={(e) => handleParamChange('leafDensity', parseFloat(e.target.value))}
+                  className="slider"
+                />
+              </div>
+            </>
+          );
+        }
         const isFlower = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
+        const curvatureMax = params.grassType === 'wild' ? 1.3 : (params.grassType === 'regular' ? 1.5 : 2.5);
 
         return (
           <>
@@ -4871,7 +5182,7 @@ case 'grass':
                 <input
                   type="range"
                   min="0.2"
-                  max="2.5"
+                  max={curvatureMax}
                   step="0.1"
                   value={params.curvature}
                   onChange={(e) => handleParamChange('curvature', parseFloat(e.target.value))}
@@ -5130,7 +5441,7 @@ case 'grass':
 
               {/* Цветные кружки */}
               <div className="color-picker-circles">
-                {plantType === 'grass' ? (
+                {(plantType === 'grass' && !['weedA', 'weedB'].includes(params.grassType)) ? (
                   <>
                     {(() => {
                       const isFlower = ['clover', 'dandelion', 'chamomile', 'cornflower', 'bellflower'].includes(params.grassType);
@@ -5321,8 +5632,12 @@ case 'grass':
                     >
                       <div
                         className="color-circle"
-                        style={{ background: params.leafGradientStartColor }}
-                        onClick={() => setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
+                        style={{
+                          background: (plantType === 'flower' && params.flowerStyle === 'rose') ? '#ccc' : params.leafGradientStartColor,
+                          opacity: (plantType === 'flower' && params.flowerStyle === 'rose') ? 0.3 : 1,
+                          cursor: (plantType === 'flower' && params.flowerStyle === 'rose') ? 'not-allowed' : 'pointer',
+                        }}
+                        onClick={() => !(plantType === 'flower' && params.flowerStyle === 'rose') && setActiveColorPicker(activeColorPicker === 'leafGradientStartColor' ? null : 'leafGradientStartColor')}
                       />
                     </div>
 
@@ -5514,7 +5829,16 @@ case 'grass':
               <label className="slider-label">{t.grassType}</label>
               <select
                 value={params.grassType}
-                onChange={(e) => handleParamChange('grassType', e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'weedA' || val === 'weedB') {
+                    const preset = L_SYSTEM_PRESETS[val];
+                    const density = val === 'weedA' ? 0.05 : 0.1;
+                    setParams(prev => ({ ...prev, grassType: val, lsysAngle: preset.angle, lsysStep: preset.step, leafDensity: density }));
+                  } else {
+                    handleParamChange('grassType', val);
+                  }
+                }}
                 className="trunk-type-dropdown"
               >
                 <option value="regular">{t.regularGrass}</option>
@@ -5526,37 +5850,146 @@ case 'grass':
                 <option value="chamomile">{t.chamomile}</option>
                 <option value="cornflower">{t.cornflower}</option>
                 <option value="bellflower">{t.bellflower}</option>
+                <option value="weedA">{t.weedA}</option>
+                <option value="weedB">{t.weedB}</option>
               </select>
             </div>
-          ) : (plantType === 'tree' || plantType === 'flower' || plantType === 'bush') ? (
-            <div className="trunk-type-selector">
-              <label className="slider-label">{t.trunkType}</label>
-              <select
-                value={params.trunkType}
-                onChange={(e) => {
-                  const newTrunkType = e.target.value;
-                  if (plantType === 'bush' && newTrunkType === 'lsystem') {
-                    const bushPreset = L_SYSTEM_PRESETS.bush;
-                    setParams(prev => ({
-                      ...prev,
-                      trunkType: newTrunkType,
-                      lsysIterations: bushPreset.iterations,
-                      lsysAngle: bushPreset.angle,
-                      lsysStep: bushPreset.step
-                    }));
-                  } else {
-                    handleParamChange('trunkType', newTrunkType);
-                  }
-                }}
-                className="trunk-type-dropdown"
-              >
-                <option value="straight">{t.straightTrunk}</option>
-                <option value="organic">{t.organicTrunk}</option>
-                {(plantType === 'tree' || plantType === 'flower' || plantType === 'bush') && (
-                  <option value="lsystem">{t.lsystemTrunk}</option>
-                )}
-              </select>
-            </div>
+          ) : plantType === 'tree' ? (
+            <>
+              <div className="trunk-type-selector">
+                <label className="slider-label">{t.treeType}</label>
+                <select
+                  value={params.trunkType === 'lsystem' ? `lsystem-${params.lsysPreset}` : 'classic'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'classic') {
+                      setParams(prev => ({ ...prev, trunkType: prev.lsysTrunkStyle || 'straight' }));
+                    } else if (val === 'lsystem-tree') {
+                      const preset = L_SYSTEM_PRESETS.tree;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysPreset: 'tree', lsysIterations: 4, lsysAngle: preset.angle, lsysStep: 8 }));
+                    } else if (val === 'lsystem-fern') {
+                      const preset = L_SYSTEM_PRESETS.fern;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysPreset: 'fern', lsysIterations: 4, lsysAngle: preset.angle, lsysStep: 8 }));
+                    } else if (val === 'lsystem-stiltedTree') {
+                      const preset = L_SYSTEM_PRESETS.stiltedTree;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysPreset: 'stiltedTree', lsysIterations: 4, lsysAngle: preset.angle, lsysStep: preset.step }));
+                    } else if (val === 'lsystem-spreadTree') {
+                      const preset = L_SYSTEM_PRESETS.spreadTree;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysPreset: 'spreadTree', lsysIterations: 4, lsysAngle: preset.angle, lsysStep: preset.step }));
+                    }
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="classic">{t.treeClassic}</option>
+                  <option value="lsystem-tree">{t.treeLsysTree}</option>
+                  <option value="lsystem-fern">{t.treeLsysFern}</option>
+                  <option value="lsystem-stiltedTree">{t.treeLsysStilted}</option>
+                  <option value="lsystem-spreadTree">{t.treeLsysSpread}</option>
+                </select>
+              </div>
+              <div className="trunk-type-selector">
+                <label className="slider-label">{t.trunkStyle}</label>
+                <select
+                  value={params.trunkType === 'lsystem' ? params.lsysTrunkStyle : params.trunkType}
+                  onChange={(e) => {
+                    const style = e.target.value;
+                    if (params.trunkType === 'lsystem') {
+                      handleParamChange('lsysTrunkStyle', style);
+                    } else {
+                      handleParamChange('trunkType', style);
+                    }
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="straight">{t.straightTrunk}</option>
+                  <option value="organic">{t.organicTrunk}</option>
+                </select>
+              </div>
+            </>
+          ) : plantType === 'flower' ? (
+            <>
+              <div className="trunk-type-selector">
+                <label className="slider-label">{t.flowerType}</label>
+                <select
+                  value={params.trunkType === 'lsystem' ? `lsystem-${params.lsysFlowerPreset || 'single'}` : 'classic'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'classic') {
+                      setParams(prev => ({ ...prev, trunkType: prev.lsysFlowerTrunkStyle || 'straight' }));
+                    } else if (val === 'lsystem-single') {
+                      const preset = L_SYSTEM_FLOWER_PRESETS.single;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysFlowerPreset: 'single', lsysFlowerIterations: 4, lsysFlowerAngle: preset.angle, lsysFlowerStep: preset.step, lsysFlowerTrunkStyle: prev.trunkType === 'lsystem' ? (prev.lsysFlowerTrunkStyle || 'straight') : prev.trunkType }));
+                    } else if (val === 'lsystem-rosebush') {
+                      const preset = L_SYSTEM_FLOWER_PRESETS.rosebush;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysFlowerPreset: 'rosebush', lsysFlowerIterations: 4, lsysFlowerAngle: preset.angle, lsysFlowerStep: preset.step, lsysFlowerTrunkStyle: prev.trunkType === 'lsystem' ? (prev.lsysFlowerTrunkStyle || 'straight') : prev.trunkType }));
+                    }
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="classic">{t.flowerClassic}</option>
+                  <option value="lsystem-single">{t.flowerLsysSingle}</option>
+                  <option value="lsystem-rosebush">{t.flowerLsysRoseBush}</option>
+                </select>
+              </div>
+              <div className="trunk-type-selector">
+                <label className="slider-label">{t.stemStyle}</label>
+                <select
+                  value={params.trunkType === 'lsystem' ? (params.lsysFlowerTrunkStyle || 'straight') : params.trunkType}
+                  onChange={(e) => {
+                    const style = e.target.value;
+                    if (params.trunkType === 'lsystem') {
+                      handleParamChange('lsysFlowerTrunkStyle', style);
+                    } else {
+                      handleParamChange('trunkType', style);
+                    }
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="straight">{t.straightTrunk}</option>
+                  <option value="organic">{t.organicTrunk}</option>
+                </select>
+              </div>
+            </>
+          ) : plantType === 'bush' ? (
+            <>
+              <div className="trunk-type-selector">
+                <label className="slider-label">{t.bushType}</label>
+                <select
+                  value={params.trunkType === 'lsystem' ? 'lsystem' : 'classic'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'classic') {
+                      setParams(prev => ({ ...prev, trunkType: prev.lsysTrunkStyle || 'straight' }));
+                    } else {
+                      const bushPreset = L_SYSTEM_PRESETS.bush;
+                      setParams(prev => ({ ...prev, trunkType: 'lsystem', lsysIterations: bushPreset.iterations, lsysAngle: bushPreset.angle, lsysStep: bushPreset.step, leafDensity: 0.1 }));
+                    }
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="classic">{t.bushClassic}</option>
+                  <option value="lsystem">{t.bushLsys}</option>
+                </select>
+              </div>
+              <div className="trunk-type-selector">
+                <label className="slider-label">{t.trunkStyle}</label>
+                <select
+                  value={params.trunkType === 'lsystem' ? params.lsysTrunkStyle : params.trunkType}
+                  onChange={(e) => {
+                    const style = e.target.value;
+                    if (params.trunkType === 'lsystem') {
+                      handleParamChange('lsysTrunkStyle', style);
+                    } else {
+                      handleParamChange('trunkType', style);
+                    }
+                  }}
+                  className="trunk-type-dropdown"
+                >
+                  <option value="straight">{t.straightTrunk}</option>
+                  <option value="organic">{t.organicTrunk}</option>
+                </select>
+              </div>
+            </>
           ) : null}
 
           {/* Слайдеры */}
@@ -5564,8 +5997,8 @@ case 'grass':
             {renderSliders()}
           </div>
 
-          {/* Чекбоксы обводки (только для tree, flower, bush) */}
-          {plantType !== 'grass' && (
+          {/* Чекбоксы обводки (только для tree, flower, bush и L-system сорняков) */}
+          {(plantType !== 'grass' || ['weedA', 'weedB'].includes(params.grassType)) && (
             <div className="outline-checkboxes">
               <div className="checkbox-item">
                 <label className="checkbox-label">
@@ -5644,7 +6077,7 @@ case 'grass':
             </div>
 
             {/* Цвет центра цветка (только для flower) */}
-            {plantType === 'flower' && (
+            {plantType === 'flower' && params.flowerStyle !== 'rose' && (
               <div className="checkbox-item">
                 <label className="checkbox-label">
                   <input
@@ -5728,8 +6161,8 @@ case 'grass':
             </button>
           </div>
 
-          {/* Drawing canvas - только для деревьев, кустов и обычных цветов */}
-          {plantType !== 'grass' && (
+          {/* Drawing canvas - только для деревьев, кустов и обычных цветов (не роза/реалистичный) */}
+          {plantType !== 'grass' && !(plantType === 'flower' && (params.flowerStyle === 'rose' || params.flowerStyle === 'realistic')) && (
             <>
               <div className="drawing-canvas-wrapper">
                 <img
