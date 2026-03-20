@@ -631,7 +631,8 @@ const App = () => {
     try {
       if (plantType === 'tree') {
         if (params.trunkType === 'lsystem') {
-          drawLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1);
+          // Canvas-отрисовку делает анимационный useEffect; здесь только SVG-данные
+          drawLSystem(null, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1);
         } else {
           drawTree(ctx, centerX, centerY, params.length, -Math.PI/2, params.thickness, params.levels, tempSvgElements, tempSvgDefs);
         }
@@ -643,7 +644,7 @@ const App = () => {
         }
       } else if (plantType === 'bush') {
         if (params.trunkType === 'lsystem') {
-          drawLSystem(ctx, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1, { presetKey: 'bush' });
+          drawLSystem(null, centerX, centerY, tempSvgElements, tempSvgDefs, 0, 1, { presetKey: 'bush' });
         } else {
           drawBush(ctx, centerX, centerY, tempSvgElements, tempSvgDefs);
         }
