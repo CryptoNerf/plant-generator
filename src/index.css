@@ -101,6 +101,7 @@ body::before {
   justify-content: center;
   border-right: 1px solid #000;
   border-radius: 0;
+  overflow-y: auto;
 }
 
 .preset-item {
@@ -890,12 +891,35 @@ body::before {
 /* Адаптивность для маленьких экранов */
 @media (max-width: 1400px) {
   .main-container {
-    grid-template-columns: 350px 1fr 350px;
+    grid-template-columns: 300px 1fr 350px;
+  }
+
+  .presets-sidebar {
+    gap: 20px;
+    padding: 15px;
   }
 
   .preset-item {
-    width: 180px;
-    height: 180px;
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-height: 850px) and (min-width: 1025px) {
+  .presets-sidebar {
+    gap: 15px;
+    padding: 15px 10px;
+    justify-content: flex-start;
+    padding-top: 30px;
+  }
+
+  .preset-item {
+    width: 140px;
+    height: 140px;
+  }
+
+  .plant-display-area {
+    padding: 20px;
   }
 }
 
